@@ -126,6 +126,7 @@ async function loadLeady() {
   const { data, error } = await supabaseClient
     .from("leady")
     .select("*")
+    .is("usunieto_o", null)
     .order("utworzono_o", { ascending: false });
 
   loadingState.hidden = true;
@@ -194,7 +195,7 @@ function renderTable() {
       </td>
       <td>${escapeHtml(lead.przypisane_do || "—")}</td>
       <td class="cell-notatki" title="${escapeHtml(lead.notatki || "")}">${escapeHtml((lead.notatki || "").slice(0, 40))}${(lead.notatki || "").length > 40 ? "…" : ""}</td>
-      <td><button class="btn-edit" data-id="${lead.id}">Edytuj</button></td>
+      <td><button class="btn-edit" data-id="${lead.id}">Edytuj</button> <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -207,6 +208,10 @@ function renderTable() {
 
   tbody.querySelectorAll(".btn-edit").forEach((btn) => {
     btn.addEventListener("click", () => openModal(btn.dataset.id));
+  });
+
+  tbody.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", () => softDeleteLead(btn.dataset.id, btn.dataset.nazwa));
   });
 }
 
@@ -222,6 +227,31 @@ async function updateLeadStatus(id, status) {
     if (lead) lead.status = status;
     renderStats();
     showToast("Status zapisany.");
+  }
+}
+
+async function softDeleteLead(id, nazwa) {
+  const potwierdzenie = confirm(
+    `Usunąć firmę "${nazwa}" z listy?\n\n` +
+    `Rekord nie zniknie bezpowrotnie z bazy - zostanie oznaczony jako usunięty ` +
+    `wraz z Twoim adresem e-mail i datą, więc będzie można go odzyskać przez panel Supabase.`
+  );
+  if (!potwierdzenie) return;
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  const { error } = await supabaseClient
+    .from("leady")
+    .update({ usunieto_przez: user.email, usunieto_o: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    showToast("Nie udało się usunąć: " + error.message, true);
+  } else {
+    currentLeady = currentLeady.filter((l) => l.id !== id);
+    renderStats();
+    renderTable();
+    showToast("Firma usunięta z listy.");
   }
 }
 
