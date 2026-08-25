@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leady — panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- EKRAN LOGOWANIA -->
+<div id="login-screen" class="screen">
+  <div class="login-card">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-name">LEADY</span>
+    </div>
+    <p class="login-sub">Panel pozyskiwania klientów</p>
+
+    <form id="login-form">
+      <label for="email-input">Adres e-mail</label>
+      <input type="email" id="email-input" placeholder="ty@firma.pl" required autocomplete="email">
+      <button type="submit" id="login-btn">Wyślij link logowania</button>
+    </form>
+
+    <div id="login-message" class="login-message" hidden></div>
+
+    <p class="login-note">Dostęp tylko dla zaproszonych osób. Link logowania ważny 60 minut, jednorazowego użytku.</p>
+  </div>
+</div>
+
+<!-- EKRAN GŁÓWNY (po zalogowaniu) -->
+<div id="app-screen" class="screen" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-name">LEADY</span>
+    </div>
+    <div class="topbar-right">
+      <span id="user-email" class="user-email"></span>
+      <button id="logout-btn" class="btn-ghost">Wyloguj</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="toolbar">
+      <input type="search" id="search-input" placeholder="Szukaj po nazwie, NIP, mieście…" class="search-box">
+      <select id="status-filter" class="status-filter">
+        <option value="">Wszystkie statusy</option>
+        <option value="nowy">Nowy</option>
+        <option value="mail_wyslany">Mail wysłany</option>
+        <option value="zainteresowany">Zainteresowany</option>
+        <option value="niezainteresowany">Niezainteresowany</option>
+        <option value="do_zadzwonienia">Do zadzwonienia</option>
+        <option value="zamkniete">Zamknięte</option>
+      </select>
+      <button id="add-lead-btn" class="btn-primary">+ Dodaj firmę</button>
+      <button id="import-csv-btn" class="btn-ghost">Importuj CSV</button>
+      <input type="file" id="csv-input" accept=".csv" hidden>
+    </div>
+
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="table-wrap">
+      <table id="leady-table">
+        <thead>
+          <tr>
+            <th>Firma</th>
+            <th>NIP</th>
+            <th>Lokalizacja</th>
+            <th>Telefon</th>
+            <th>E-mail</th>
+            <th>Status</th>
+            <th>Przypisane do</th>
+            <th>Notatki</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="leady-tbody">
+          <!-- wiersze wstrzykiwane przez app.js -->
+        </tbody>
+      </table>
+      <div id="empty-state" class="empty-state" hidden>
+        <p>Brak leadów spełniających kryteria.</p>
+      </div>
+      <div id="loading-state" class="loading-state">
+        <p>Wczytuję dane…</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: dodawanie / edycja firmy -->
+<div id="lead-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <h2 id="modal-title">Dodaj firmę</h2>
+    <form id="lead-form">
+      <input type="hidden" id="lead-id">
+      <label>Nazwa firmy *<input type="text" id="f-nazwa" required></label>
+      <label>NIP<input type="text" id="f-nip"></label>
+      <label>Lokalizacja<input type="text" id="f-lokalizacja" placeholder="np. Wrocław"></label>
+      <label>Adres<input type="text" id="f-adres"></label>
+      <label>Telefon<input type="text" id="f-telefon"></label>
+      <label>E-mail<input type="email" id="f-email"></label>
+      <label>Osoba kontaktowa<input type="text" id="f-osoba"></label>
+      <label>Status
+        <select id="f-status">
+          <option value="nowy">Nowy</option>
+          <option value="mail_wyslany">Mail wysłany</option>
+          <option value="zainteresowany">Zainteresowany</option>
+          <option value="niezainteresowany">Niezainteresowany</option>
+          <option value="do_zadzwonienia">Do zadzwonienia</option>
+          <option value="zamkniete">Zamknięte</option>
+        </select>
+      </label>
+      <label>Przypisane do (e-mail)<input type="email" id="f-przypisane"></label>
+      <label>Notatki<textarea id="f-notatki" rows="3"></textarea></label>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel" class="btn-ghost">Anuluj</button>
+        <button type="submit" class="btn-primary">Zapisz</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
