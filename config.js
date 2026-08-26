@@ -1,18 +1,19 @@
 // ============================================================
 // KONFIGURACJA POŁĄCZENIA Z SUPABASE
 // ============================================================
-// Wklej tu dane ze swojego projektu Supabase:
-// Dashboard -> Project Settings -> API
+// TO JEST WERSJA DLA ŚRODOWISKA TESTOWEGO (branch staging).
+// Wskazuje na osobny, testowy projekt Supabase (leady-crm-test),
+// całkowicie odizolowany od prawdziwych danych produkcyjnych.
 //
-// UWAGA: "anon public key" JEST BEZPIECZNY do umieszczenia tutaj
+// UWAGA: "Publishable key" JEST BEZPIECZNY do umieszczenia tutaj
 // i wrzucenia do publicznego repozytorium GitHub. Supabase projektuje
 // ten klucz jako publiczny z założenia - realną ochronę danych
 // zapewnia Row Level Security (RLS) ustawione w schema.sql, nie
 // tajność tego klucza.
 //
-// NIGDY nie wklejaj tutaj "service_role key" - to byłby błąd
+// NIGDY nie wklejaj tutaj "Secret key" - to byłby błąd
 // bezpieczeństwa dający pełny dostęp do bazy z pominięciem RLS.
 // ============================================================
 
-const SUPABASE_URL = "https://oeijelhshkdpbsjldkcp.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_gMtnPqaVbUZ2YsBt4UA3qA_cfnc8nVK";
+const SUPABASE_URL = "https://wyyuhxrczflpkzybxdqk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_cMN9TlutYCfXGWybP34-0g_gqp1_a3f";
