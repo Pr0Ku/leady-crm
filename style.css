@@ -18,6 +18,16 @@
 
 * { box-sizing: border-box; }
 
+#staging-banner {
+  background: var(--amber);
+  color: var(--navy-950);
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+}
+
 [hidden] { display: none !important; }
 
 body {
