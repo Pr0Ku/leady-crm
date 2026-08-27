@@ -15,6 +15,7 @@ create table if not exists public.leady (
     email text,
     osoba_kontaktowa text,      -- imię i nazwisko
     zrodlo text,                 -- np. 'Google Places', 'CEIDG', 'ręcznie'
+    www text,                    -- strona internetowa firmy
     status text not null default 'nowy'
         check (status in ('nowy', 'mail_wyslany', 'zainteresowany', 'niezainteresowany', 'do_zadzwonienia', 'zamkniete')),
     przypisane_do text,          -- email osoby odpowiedzialnej za dalszy kontakt

@@ -57,6 +57,20 @@ function escapeHtml(str) {
   }[c]));
 }
 
+function renderWwwCell(url) {
+  if (!url) return "—";
+  const safeUrl = url.trim();
+  // Renderuj link tylko dla bezpiecznych protokołów (http/https) - zapobiega wstrzyknięciu np. javascript:
+  if (!/^https?:\/\//i.test(safeUrl)) return escapeHtml(safeUrl);
+
+  let domain = safeUrl;
+  try {
+    domain = new URL(safeUrl).hostname.replace(/^www\./, "");
+  } catch (e) { /* zostaw pelny url jako tekst, jesli parsowanie sie nie uda */ }
+
+  return `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(safeUrl)}">${escapeHtml(domain)}</a>`;
+}
+
 // -------------------- AUTORYZACJA --------------------
 
 loginForm.addEventListener("submit", async (e) => {
@@ -186,6 +200,7 @@ function renderTable() {
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td class="cell-mono">${escapeHtml(lead.telefon || "—")}</td>
       <td>${escapeHtml(lead.email || "—")}</td>
+      <td class="cell-www">${renderWwwCell(lead.www)}</td>
       <td>
         <select class="status-select status-${lead.status}" data-id="${lead.id}">
           ${Object.entries(STATUS_LABELS).map(([key, label]) =>
@@ -272,6 +287,7 @@ function openModal(id = null) {
     document.getElementById("f-adres").value = lead.adres || "";
     document.getElementById("f-telefon").value = lead.telefon || "";
     document.getElementById("f-email").value = lead.email || "";
+    document.getElementById("f-www").value = lead.www || "";
     document.getElementById("f-osoba").value = lead.osoba_kontaktowa || "";
     document.getElementById("f-status").value = lead.status || "nowy";
     document.getElementById("f-przypisane").value = lead.przypisane_do || "";
@@ -302,6 +318,7 @@ leadForm.addEventListener("submit", async (e) => {
     adres: document.getElementById("f-adres").value.trim() || null,
     telefon: document.getElementById("f-telefon").value.trim() || null,
     email: document.getElementById("f-email").value.trim() || null,
+    www: document.getElementById("f-www").value.trim() || null,
     osoba_kontaktowa: document.getElementById("f-osoba").value.trim() || null,
     status: document.getElementById("f-status").value,
     przypisane_do: document.getElementById("f-przypisane").value.trim() || null,
@@ -395,10 +412,11 @@ function mapCsvRowToLead(row) {
     adres: adres || null,
     telefon: row["telefon"] || null,
     email: row["email"] || null,
+    www: row["www"] || null,
     osoba_kontaktowa: [row["imie"], row["nazwisko"]].filter(Boolean).join(" ") || null,
     status: "nowy",
     zrodlo: row["google_place_id"] ? "Google Places" : (row["nip"] ? "CEIDG" : "import CSV"),
-    notatki: row["www"] ? `www: ${row["www"]}` : null,
+    notatki: null,
   };
 }
 

@@ -294,8 +294,11 @@ tbody td {
 tbody tr:hover { background: #fbfaf7; }
 
 .cell-nazwa { font-weight: 600; }
-.cell-mono { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); }
+.cell-mono { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
 .cell-notatki { color: var(--ink-soft); font-size: 12.5px; max-width: 180px; }
+.cell-www { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-www a { color: var(--amber-dim); text-decoration: none; }
+.cell-www a:hover { text-decoration: underline; }
 
 .status-select {
   font-size: 12px;
