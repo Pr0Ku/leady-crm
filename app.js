@@ -371,14 +371,19 @@ csvInput.addEventListener("change", async (e) => {
   const { data: { user } } = await supabaseClient.auth.getUser();
   mapped.forEach((r) => { r.utworzono_przez = user.id; });
 
-  const { error } = await supabaseClient.from("leady").insert(mapped);
+  // upsert z ignoreDuplicates: firmy o juz istniejacym google_place_id
+  // zostana pominiete zamiast wstawiane ponownie (ochrona przed duplikatami
+  // przy powtornym imporcie tego samego miasta/frazy).
+  const { error, count } = await supabaseClient
+    .from("leady")
+    .upsert(mapped, { onConflict: "google_place_id", ignoreDuplicates: true, count: "exact" });
 
   csvInput.value = "";
 
   if (error) {
     showToast("Błąd importu: " + error.message, true);
   } else {
-    showToast(`Zaimportowano ${mapped.length} firm.`);
+    showToast(`Przetworzono ${mapped.length} rekordów z CSV (duplikaty po Google ID pominięte automatycznie).`);
     loadLeady();
   }
 });
@@ -413,6 +418,7 @@ function mapCsvRowToLead(row) {
     telefon: row["telefon"] || null,
     email: row["email"] || null,
     www: row["www"] || null,
+    google_place_id: row["google_place_id"] || null,
     osoba_kontaktowa: [row["imie"], row["nazwisko"]].filter(Boolean).join(" ") || null,
     status: "nowy",
     zrodlo: row["google_place_id"] ? "Google Places" : (row["nip"] ? "CEIDG" : "import CSV"),

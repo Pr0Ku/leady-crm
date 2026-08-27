@@ -16,6 +16,7 @@ create table if not exists public.leady (
     osoba_kontaktowa text,      -- imię i nazwisko
     zrodlo text,                 -- np. 'Google Places', 'CEIDG', 'ręcznie'
     www text,                    -- strona internetowa firmy
+    google_place_id text,        -- unikalny ID z Google Places, do wykrywania duplikatow przy imporcie
     status text not null default 'nowy'
         check (status in ('nowy', 'mail_wyslany', 'zainteresowany', 'niezainteresowany', 'do_zadzwonienia', 'zamkniete')),
     przypisane_do text,          -- email osoby odpowiedzialnej za dalszy kontakt
@@ -27,6 +28,12 @@ create table if not exists public.leady (
 
 -- Indeksy pod filtrowanie/wyszukiwanie
 create index if not exists idx_leady_status on public.leady(status);
+
+-- Unikalny indeks na google_place_id - blokuje duplikaty przy imporcie z Google Places.
+-- NULLe sa dozwolone wielokrotnie (rekordy dodane recznie/z CEIDG nie maja tego pola).
+create unique index if not exists idx_leady_google_place_id_unique
+    on public.leady(google_place_id)
+    where google_place_id is not null;
 create index if not exists idx_leady_nip on public.leady(nip);
 create index if not exists idx_leady_nazwa on public.leady using gin (to_tsvector('simple', nazwa_firmy));
 
