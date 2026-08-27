@@ -29,11 +29,13 @@ create table if not exists public.leady (
 -- Indeksy pod filtrowanie/wyszukiwanie
 create index if not exists idx_leady_status on public.leady(status);
 
--- Unikalny indeks na google_place_id - blokuje duplikaty przy imporcie z Google Places.
--- NULLe sa dozwolone wielokrotnie (rekordy dodane recznie/z CEIDG nie maja tego pola).
-create unique index if not exists idx_leady_google_place_id_unique
-    on public.leady(google_place_id)
-    where google_place_id is not null;
+-- Unikalne ograniczenie (constraint, nie partial index!) na google_place_id.
+-- Postgres pozwala na wiele wartosci NULL nawet przy zwyklym UNIQUE, wiec
+-- rekordy bez google_place_id (dodane recznie / z CEIDG) nie sa tym objete.
+-- WAZNE: zwykly UNIQUE constraint (a nie partial unique index) jest wymagany,
+-- zeby mechanizm upsert (ON CONFLICT) w Supabase poprawnie go rozpoznawal.
+alter table public.leady
+    add constraint leady_google_place_id_key unique (google_place_id);
 create index if not exists idx_leady_nip on public.leady(nip);
 create index if not exists idx_leady_nazwa on public.leady using gin (to_tsvector('simple', nazwa_firmy));
 
