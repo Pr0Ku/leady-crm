@@ -196,7 +196,7 @@ function renderTable() {
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
-      <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.nazwa_firmy)}</td>
+      <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>
         <select class="status-select status-${lead.status}" data-id="${lead.id}">

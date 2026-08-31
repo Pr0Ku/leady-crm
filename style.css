@@ -274,7 +274,7 @@ body {
   position: relative;
 }
 
-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
 
 thead th {
   text-align: left;
@@ -299,7 +299,13 @@ tbody td {
 
 tbody tr:hover { background: #fbfaf7; }
 
-.cell-nazwa { font-weight: 600; }
+.cell-nazwa {
+  font-weight: 600;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .cell-mono { font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
 .cell-notatki { color: var(--ink-soft); font-size: 12.5px; max-width: 180px; }
 .cell-www { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -315,6 +321,12 @@ tbody tr:hover { background: #fbfaf7; }
 }
 
 thead th.cell-actions { background: white; z-index: 3; }
+
+thead th:nth-child(1) { width: 26%; }
+thead th:nth-child(2) { width: 18%; }
+thead th:nth-child(3) { width: 22%; }
+thead th:nth-child(4) { width: 22%; }
+thead th.cell-actions { width: 140px; }
 
 tbody tr:hover .cell-actions { background: #fbfaf7; }
 
