@@ -14,6 +14,8 @@ const STATUS_LABELS = {
 };
 
 let currentLeady = [];
+let currentTab = "leady";
+let notatkiCache = {};
 
 // -------------------- ELEMENTY DOM --------------------
 const loginScreen = document.getElementById("login-screen");
@@ -34,6 +36,11 @@ const statsRow = document.getElementById("stats-row");
 const addLeadBtn = document.getElementById("add-lead-btn");
 const importCsvBtn = document.getElementById("import-csv-btn");
 const csvInput = document.getElementById("csv-input");
+
+const viewLeady = document.getElementById("view-leady");
+const viewKlienci = document.getElementById("view-klienci");
+const klienciTbody = document.getElementById("klienci-tbody");
+const emptyStateKlienci = document.getElementById("empty-state-klienci");
 
 const modal = document.getElementById("lead-modal");
 const modalTitle = document.getElementById("modal-title");
@@ -131,6 +138,29 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// -------------------- ZAKŁADKI LEADY / KLIENCI --------------------
+
+document.querySelectorAll("#view-tabs .tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    currentTab = btn.dataset.tab;
+    document.querySelectorAll("#view-tabs .tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    viewLeady.hidden = currentTab !== "leady";
+    viewKlienci.hidden = currentTab !== "klienci";
+    statusFilter.hidden = currentTab !== "leady";
+    addLeadBtn.hidden = currentTab !== "leady";
+    importCsvBtn.hidden = currentTab !== "leady";
+    render();
+  });
+});
+
+function render() {
+  if (currentTab === "leady") {
+    renderTable();
+  } else {
+    renderKlienciTable();
+  }
+}
+
 // -------------------- POBIERANIE / RENDEROWANIE LEADÓW --------------------
 
 async function loadLeady() {
@@ -152,12 +182,13 @@ async function loadLeady() {
 
   currentLeady = data || [];
   renderStats();
-  renderTable();
+  render();
 }
 
 function renderStats() {
+  const leadyOnly = currentLeady.filter((l) => !l.numer_klienta);
   const counts = {};
-  currentLeady.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
+  leadyOnly.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
 
   statsRow.innerHTML = Object.entries(STATUS_LABELS).map(([key, label]) => `
     <div class="stat-pill" data-status="${key}">
@@ -179,9 +210,22 @@ function getFilteredLeady() {
   const statusVal = statusFilter.value;
 
   return currentLeady.filter((l) => {
+    if (l.numer_klienta) return false;
     if (statusVal && l.status !== statusVal) return false;
     if (!q) return true;
     const haystack = [l.nazwa_firmy, l.nip, l.lokalizacja, l.telefon, l.email, l.osoba_kontaktowa]
+      .filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(q);
+  });
+}
+
+function getFilteredKlienci() {
+  const q = searchInput.value.trim().toLowerCase();
+
+  return currentLeady.filter((l) => {
+    if (!l.numer_klienta) return false;
+    if (!q) return true;
+    const haystack = [l.nazwa_firmy, l.nip, l.lokalizacja, l.numer_klienta]
       .filter(Boolean).join(" ").toLowerCase();
     return haystack.includes(q);
   });
@@ -206,7 +250,11 @@ function renderTable() {
         </select>
       </td>
       <td>${escapeHtml(lead.przypisane_do || "—")}</td>
-      <td class="cell-actions"><button class="btn-edit" data-id="${lead.id}">Edytuj</button> <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button></td>
+      <td class="cell-actions">
+        <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
+        <button class="btn-oznacz" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}" title="Oznacz jako klienta">Klient</button>
+        <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button>
+      </td>
     `;
     tbody.appendChild(tr);
 
@@ -248,10 +296,190 @@ function renderTable() {
   tbody.querySelectorAll(".btn-delete").forEach((btn) => {
     btn.addEventListener("click", () => softDeleteLead(btn.dataset.id, btn.dataset.nazwa));
   });
+
+  tbody.querySelectorAll(".btn-oznacz").forEach((btn) => {
+    btn.addEventListener("click", () => oznaczJakoKlienta(btn.dataset.id, btn.dataset.nazwa));
+  });
 }
 
-searchInput.addEventListener("input", renderTable);
-statusFilter.addEventListener("change", renderTable);
+searchInput.addEventListener("input", render);
+statusFilter.addEventListener("change", render);
+
+async function oznaczJakoKlienta(id, nazwa) {
+  const potwierdzenie = confirm(
+    `Czy na pewno chcesz oznaczyć "${nazwa}" jako klienta?\n\n` +
+    `Zostanie mu nadany numer klienta, a firma przeniesie się do zakładki "Klienci".`
+  );
+  if (!potwierdzenie) return;
+
+  const { data: nowyNumer, error } = await supabaseClient.rpc("oznacz_jako_klienta", { p_id: id });
+
+  if (error) {
+    showToast("Nie udało się oznaczyć jako klienta: " + error.message, true);
+    return;
+  }
+
+  const lead = currentLeady.find((l) => l.id === id);
+  if (lead) {
+    lead.numer_klienta = nowyNumer;
+    lead.klientem_od = new Date().toISOString();
+  }
+  renderStats();
+  render();
+  showToast(`Oznaczono jako klienta (nr ${nowyNumer}).`);
+}
+
+// -------------------- ZAKŁADKA KLIENCI --------------------
+
+function renderKlienciTable() {
+  const filtered = getFilteredKlienci();
+  emptyStateKlienci.hidden = filtered.length !== 0;
+  klienciTbody.innerHTML = "";
+
+  filtered.forEach((lead) => {
+    const tr = document.createElement("tr");
+    tr.className = "row-main";
+    tr.innerHTML = `
+      <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
+      <td>${escapeHtml(lead.lokalizacja || "—")}</td>
+      <td class="cell-mono">${escapeHtml(lead.numer_klienta || "—")}</td>
+      <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
+      <td>${lead.data_konca_kontraktu ? new Date(lead.data_konca_kontraktu).toLocaleDateString("pl-PL") : "—"}</td>
+      <td class="cell-actions">
+        <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
+        <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Archiwizuj</button>
+      </td>
+    `;
+    klienciTbody.appendChild(tr);
+
+    const trDetails = document.createElement("tr");
+    trDetails.className = "row-details";
+    trDetails.hidden = true;
+    trDetails.dataset.detailsFor = lead.id;
+    trDetails.innerHTML = `
+      <td colspan="6">
+        <div class="details-grid">
+          <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
+          <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
+          <div><span class="details-label">E-mail</span><div>${escapeHtml(lead.email || "—")}</div></div>
+          <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
+          <div>
+            <span class="details-label">Data końca kontraktu</span>
+            <input type="date" class="kontrakt-input" data-id="${lead.id}" value="${lead.data_konca_kontraktu || ""}">
+          </div>
+        </div>
+        <div class="notatki-section">
+          <span class="details-label">Notatki</span>
+          <div class="notatki-thread" id="notatki-thread-${lead.id}">
+            <p class="notatki-loading">Wczytuję notatki…</p>
+          </div>
+          <form class="notatka-form" data-id="${lead.id}">
+            <textarea rows="2" placeholder="Dodaj notatkę…" required></textarea>
+            <button type="submit" class="btn-primary">Dodaj</button>
+          </form>
+        </div>
+      </td>
+    `;
+    klienciTbody.appendChild(trDetails);
+  });
+
+  klienciTbody.querySelectorAll(".cell-clickable").forEach((cell) => {
+    cell.addEventListener("click", async () => {
+      const details = klienciTbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
+      if (!details) return;
+      details.hidden = !details.hidden;
+      if (!details.hidden && details.dataset.notatkiLoaded !== "1") {
+        details.dataset.notatkiLoaded = "1";
+        await loadAndRenderNotatki(cell.dataset.toggle);
+      }
+    });
+  });
+
+  klienciTbody.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", () => openModal(btn.dataset.id));
+  });
+
+  klienciTbody.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", () => archiveClient(btn.dataset.id, btn.dataset.nazwa));
+  });
+
+  klienciTbody.querySelectorAll(".kontrakt-input").forEach((input) => {
+    input.addEventListener("change", async (e) => {
+      await updateKoniecKontraktu(e.target.dataset.id, e.target.value || null);
+    });
+  });
+
+  klienciTbody.querySelectorAll(".notatka-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const textarea = form.querySelector("textarea");
+      const tresc = textarea.value.trim();
+      if (!tresc) return;
+      await dodajNotatke(form.dataset.id, tresc);
+      textarea.value = "";
+    });
+  });
+}
+
+async function loadAndRenderNotatki(leadId) {
+  const { data, error } = await supabaseClient
+    .from("notatki_klienta")
+    .select("*")
+    .eq("lead_id", leadId)
+    .order("utworzono_o", { ascending: true });
+
+  if (error) {
+    const container = document.getElementById(`notatki-thread-${leadId}`);
+    if (container) container.innerHTML = `<p class="notatki-loading">Błąd wczytywania notatek.</p>`;
+    return;
+  }
+
+  notatkiCache[leadId] = data || [];
+  renderNotatkiThread(leadId);
+}
+
+function renderNotatkiThread(leadId) {
+  const container = document.getElementById(`notatki-thread-${leadId}`);
+  if (!container) return;
+  const notatki = notatkiCache[leadId] || [];
+
+  if (notatki.length === 0) {
+    container.innerHTML = `<p class="notatki-loading">Brak notatek.</p>`;
+    return;
+  }
+
+  container.innerHTML = notatki.map((n) => `
+    <div class="notatka-item">
+      <div class="notatka-meta">${escapeHtml(n.autor || "—")} · ${new Date(n.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div>${escapeHtml(n.tresc)}</div>
+    </div>
+  `).join("");
+}
+
+async function dodajNotatke(leadId, tresc) {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  const { error } = await supabaseClient
+    .from("notatki_klienta")
+    .insert({ lead_id: leadId, autor: user.email, tresc });
+
+  if (error) {
+    showToast("Nie udało się dodać notatki: " + error.message, true);
+  } else {
+    await loadAndRenderNotatki(leadId);
+    showToast("Notatka dodana.");
+  }
+}
+
+async function updateKoniecKontraktu(id, dataKonca) {
+  const { error } = await supabaseClient.from("leady").update({ data_konca_kontraktu: dataKonca }).eq("id", id);
+  if (error) {
+    showToast("Nie udało się zapisać daty: " + error.message, true);
+  } else {
+    const lead = currentLeady.find((l) => l.id === id);
+    if (lead) lead.data_konca_kontraktu = dataKonca;
+    showToast("Data zapisana.");
+  }
+}
 
 async function updateLeadStatus(id, status) {
   const { error } = await supabaseClient.from("leady").update({ status }).eq("id", id);
@@ -285,8 +513,32 @@ async function softDeleteLead(id, nazwa) {
   } else {
     currentLeady = currentLeady.filter((l) => l.id !== id);
     renderStats();
-    renderTable();
+    render();
     showToast("Firma usunięta z listy.");
+  }
+}
+
+async function archiveClient(id, nazwa) {
+  const potwierdzenie = confirm(
+    `Czy na pewno chcesz zarchiwizować klienta "${nazwa}"?\n\n` +
+    `Rekord nie zniknie bezpowrotnie z bazy - zostanie oznaczony jako usunięty ` +
+    `wraz z Twoim adresem e-mail i datą, więc będzie można go odzyskać przez panel Supabase.`
+  );
+  if (!potwierdzenie) return;
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  const { error } = await supabaseClient
+    .from("leady")
+    .update({ usunieto_przez: user.email, usunieto_o: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    showToast("Nie udało się zarchiwizować: " + error.message, true);
+  } else {
+    currentLeady = currentLeady.filter((l) => l.id !== id);
+    render();
+    showToast("Klient zarchiwizowany.");
   }
 }
 

@@ -63,28 +63,58 @@
       <input type="file" id="csv-input" accept=".csv" hidden>
     </div>
 
-    <div class="stats-row" id="stats-row"></div>
+    <div class="tabs" id="view-tabs">
+      <button type="button" class="tab-btn active" data-tab="leady">Leady</button>
+      <button type="button" class="tab-btn" data-tab="klienci">Klienci</button>
+    </div>
 
-    <div class="table-wrap">
-      <table id="leady-table">
-        <thead>
-          <tr>
-            <th>Firma</th>
-            <th>Lokalizacja</th>
-            <th>Status</th>
-            <th>Przypisane do</th>
-            <th class="cell-actions"></th>
-          </tr>
-        </thead>
-        <tbody id="leady-tbody">
-          <!-- wiersze wstrzykiwane przez app.js -->
-        </tbody>
-      </table>
-      <div id="empty-state" class="empty-state" hidden>
-        <p>Brak leadów spełniających kryteria.</p>
+    <div id="view-leady">
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="table-wrap">
+        <table id="leady-table">
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Lokalizacja</th>
+              <th>Status</th>
+              <th>Przypisane do</th>
+              <th class="cell-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="leady-tbody">
+            <!-- wiersze wstrzykiwane przez app.js -->
+          </tbody>
+        </table>
+        <div id="empty-state" class="empty-state" hidden>
+          <p>Brak leadów spełniających kryteria.</p>
+        </div>
+        <div id="loading-state" class="loading-state">
+          <p>Wczytuję dane…</p>
+        </div>
       </div>
-      <div id="loading-state" class="loading-state">
-        <p>Wczytuję dane…</p>
+    </div>
+
+    <div id="view-klienci" hidden>
+      <div class="table-wrap">
+        <table id="klienci-table">
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Lokalizacja</th>
+              <th>Nr klienta</th>
+              <th>Klientem od</th>
+              <th>Koniec kontraktu</th>
+              <th class="cell-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="klienci-tbody">
+            <!-- wiersze wstrzykiwane przez app.js -->
+          </tbody>
+        </table>
+        <div id="empty-state-klienci" class="empty-state" hidden>
+          <p>Brak klientów spełniających kryteria.</p>
+        </div>
       </div>
     </div>
   </main>

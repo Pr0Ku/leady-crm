@@ -190,6 +190,28 @@ body {
   background: white;
 }
 
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--paper-dim);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 2px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--ink); border-bottom-color: var(--amber); }
+
 .btn-primary, .btn-ghost, .btn-edit {
   font-family: var(--font-body);
   font-size: 13px;
@@ -231,6 +253,18 @@ body {
   font-family: var(--font-body);
 }
 .btn-delete:hover { text-decoration: underline; }
+
+.btn-oznacz {
+  background: transparent;
+  color: var(--green);
+  padding: 6px 8px;
+  font-weight: 500;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.btn-oznacz:hover { text-decoration: underline; }
 
 /* ---------- STATYSTYKI ---------- */
 .stats-row {
@@ -326,7 +360,14 @@ thead th:nth-child(1) { width: 26%; }
 thead th:nth-child(2) { width: 18%; }
 thead th:nth-child(3) { width: 22%; }
 thead th:nth-child(4) { width: 22%; }
-thead th.cell-actions { width: 140px; }
+#leady-table thead th.cell-actions { width: 240px; }
+
+#klienci-table thead th:nth-child(1) { width: 22%; }
+#klienci-table thead th:nth-child(2) { width: 16%; }
+#klienci-table thead th:nth-child(3) { width: 13%; }
+#klienci-table thead th:nth-child(4) { width: 15%; }
+#klienci-table thead th:nth-child(5) { width: 15%; }
+#klienci-table thead th.cell-actions { width: 170px; }
 
 tbody tr:hover .cell-actions { background: #fbfaf7; }
 
@@ -356,6 +397,58 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
 }
 
 .details-notatki { grid-column: 1 / -1; }
+
+.kontrakt-input {
+  margin-top: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--paper-dim);
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.notatki-section { margin-top: 18px; }
+
+.notatki-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+  max-width: 560px;
+}
+
+.notatki-loading { color: var(--ink-soft); font-size: 13px; margin: 4px 0; }
+
+.notatka-item {
+  background: white;
+  border: 1px solid var(--paper-dim);
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.notatka-meta {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.notatka-form {
+  display: flex;
+  gap: 8px;
+  max-width: 560px;
+  align-items: flex-start;
+}
+
+.notatka-form textarea {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--paper-dim);
+  border-radius: 3px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  resize: vertical;
+}
 
 @media (max-width: 700px) {
   .details-grid { grid-template-columns: 1fr 1fr; }

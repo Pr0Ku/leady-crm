@@ -21,6 +21,9 @@ create table if not exists public.leady (
         check (status in ('nowy', 'mail_wyslany', 'zainteresowany', 'niezainteresowany', 'do_zadzwonienia', 'zamkniete')),
     przypisane_do text,          -- email osoby odpowiedzialnej za dalszy kontakt
     notatki text,
+    numer_klienta text unique,   -- np. 'C0001', nadawany automatycznie przy konwersji na klienta
+    klientem_od timestamptz,     -- kiedy lead zostal oznaczony jako klient
+    data_konca_kontraktu date,   -- opcjonalna data konca umowy/abonamentu
     utworzono_przez uuid references auth.users(id),
     utworzono_o timestamptz not null default now(),
     zaktualizowano_o timestamptz not null default now()
@@ -84,6 +87,61 @@ create policy "Zalogowani moga edytowac leady"
 -- Jeśli będziesz chciał kiedyś to zmienić, dodaj analogiczną politykę "for delete".
 -- Na razie: usuwanie tylko ręcznie przez Ciebie w panelu Supabase (Table Editor),
 -- żeby nikt przez pomyłkę nie skasował całej bazy z poziomu appki.
+
+-- ============================================================
+-- ZAKŁADKA "KLIENCI" - numeracja, konwersja leada w klienta, notatki
+-- ============================================================
+
+create sequence if not exists public.klient_numer_seq start 1;
+
+-- Bezpiecznie (bez wyścigu przy równoczesnych kliknięciach) nadaje kolejny
+-- numer klienta w formacie C0001, C0002... i ustawia datę konwersji.
+create or replace function public.oznacz_jako_klienta(p_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  nowy_numer text;
+begin
+  select 'C' || lpad(nextval('klient_numer_seq')::text, 4, '0') into nowy_numer;
+
+  update public.leady
+  set numer_klienta = nowy_numer,
+      klientem_od = now()
+  where id = p_id
+    and numer_klienta is null;
+
+  return nowy_numer;
+end;
+$$;
+
+grant execute on function public.oznacz_jako_klienta(uuid) to authenticated;
+
+-- Wątek notatek klienta - każdy wpis to osobny rekord z autorem, wpisy się
+-- nie nadpisują (inaczej niż pole "notatki" dla leadów).
+create table if not exists public.notatki_klienta (
+    id uuid primary key default gen_random_uuid(),
+    lead_id uuid not null references public.leady(id) on delete cascade,
+    autor text,
+    tresc text not null,
+    utworzono_o timestamptz not null default now()
+);
+
+create index if not exists idx_notatki_klienta_lead_id on public.notatki_klienta(lead_id);
+
+alter table public.notatki_klienta enable row level security;
+
+create policy "Zalogowani moga czytac notatki klienta"
+    on public.notatki_klienta for select
+    to authenticated
+    using (true);
+
+create policy "Zalogowani moga dodawac notatki klienta"
+    on public.notatki_klienta for insert
+    to authenticated
+    with check (true);
 
 -- ============================================================
 -- Weryfikacja: sprawdź czy RLS jest włączone (powinno zwrócić "t")
