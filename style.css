@@ -318,6 +318,37 @@ thead th.cell-actions { background: white; z-index: 3; }
 
 tbody tr:hover .cell-actions { background: #fbfaf7; }
 
+.cell-clickable { cursor: pointer; }
+.cell-clickable:hover { text-decoration: underline; }
+
+.row-details td {
+  padding: 16px 14px 20px 30px;
+  background: #fbfaf7;
+  border-bottom: 1px solid #f0efe9;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 24px;
+  font-size: 13px;
+}
+
+.details-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin-bottom: 3px;
+}
+
+.details-notatki { grid-column: 1 / -1; }
+
+@media (max-width: 700px) {
+  .details-grid { grid-template-columns: 1fr 1fr; }
+}
+
 .status-select {
   font-size: 12px;
   font-weight: 600;

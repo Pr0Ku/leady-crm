@@ -194,13 +194,10 @@ function renderTable() {
 
   filtered.forEach((lead) => {
     const tr = document.createElement("tr");
+    tr.className = "row-main";
     tr.innerHTML = `
-      <td class="cell-nazwa">${escapeHtml(lead.nazwa_firmy)}</td>
-      <td class="cell-mono">${escapeHtml(lead.nip || "—")}</td>
+      <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
-      <td class="cell-mono">${escapeHtml(lead.telefon || "—")}</td>
-      <td>${escapeHtml(lead.email || "—")}</td>
-      <td class="cell-www">${renderWwwCell(lead.www)}</td>
       <td>
         <select class="status-select status-${lead.status}" data-id="${lead.id}">
           ${Object.entries(STATUS_LABELS).map(([key, label]) =>
@@ -209,10 +206,33 @@ function renderTable() {
         </select>
       </td>
       <td>${escapeHtml(lead.przypisane_do || "—")}</td>
-      <td class="cell-notatki" title="${escapeHtml(lead.notatki || "")}">${escapeHtml((lead.notatki || "").slice(0, 40))}${(lead.notatki || "").length > 40 ? "…" : ""}</td>
       <td class="cell-actions"><button class="btn-edit" data-id="${lead.id}">Edytuj</button> <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button></td>
     `;
     tbody.appendChild(tr);
+
+    const trDetails = document.createElement("tr");
+    trDetails.className = "row-details";
+    trDetails.hidden = true;
+    trDetails.dataset.detailsFor = lead.id;
+    trDetails.innerHTML = `
+      <td colspan="5">
+        <div class="details-grid">
+          <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
+          <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
+          <div><span class="details-label">E-mail</span><div>${escapeHtml(lead.email || "—")}</div></div>
+          <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
+          <div class="details-notatki"><span class="details-label">Notatki</span><div>${escapeHtml(lead.notatki || "—")}</div></div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(trDetails);
+  });
+
+  tbody.querySelectorAll(".cell-clickable").forEach((cell) => {
+    cell.addEventListener("click", () => {
+      const details = tbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
+      if (details) details.hidden = !details.hidden;
+    });
   });
 
   tbody.querySelectorAll(".status-select").forEach((sel) => {
