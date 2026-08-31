@@ -300,6 +300,18 @@ tbody tr:hover { background: #fbfaf7; }
 .cell-www a { color: var(--amber-dim); text-decoration: none; }
 .cell-www a:hover { text-decoration: underline; }
 
+.cell-actions {
+  position: sticky;
+  right: 0;
+  background: white;
+  box-shadow: -6px 0 8px -6px rgba(0,0,0,0.15);
+  white-space: nowrap;
+}
+
+thead th.cell-actions { background: white; z-index: 1; }
+
+tbody tr:hover .cell-actions { background: #fbfaf7; }
+
 .status-select {
   font-size: 12px;
   font-weight: 600;

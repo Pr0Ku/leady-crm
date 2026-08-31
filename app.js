@@ -210,7 +210,7 @@ function renderTable() {
       </td>
       <td>${escapeHtml(lead.przypisane_do || "—")}</td>
       <td class="cell-notatki" title="${escapeHtml(lead.notatki || "")}">${escapeHtml((lead.notatki || "").slice(0, 40))}${(lead.notatki || "").length > 40 ? "…" : ""}</td>
-      <td><button class="btn-edit" data-id="${lead.id}">Edytuj</button> <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button></td>
+      <td class="cell-actions"><button class="btn-edit" data-id="${lead.id}">Edytuj</button> <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button></td>
     `;
     tbody.appendChild(tr);
   });
