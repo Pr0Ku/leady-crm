@@ -269,6 +269,8 @@ body {
   border: 1px solid var(--paper-dim);
   border-radius: 4px;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
   position: relative;
 }
 
