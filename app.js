@@ -28,6 +28,10 @@ const logoutBtn = document.getElementById("logout-btn");
 
 const searchInput = document.getElementById("search-input");
 const statusFilter = document.getElementById("status-filter");
+const fieldFilters = document.getElementById("field-filters");
+const filterMaEmail = document.getElementById("filter-ma-email");
+const filterMaTelefon = document.getElementById("filter-ma-telefon");
+const filterMaWww = document.getElementById("filter-ma-www");
 const tbody = document.getElementById("leady-tbody");
 const emptyState = document.getElementById("empty-state");
 const loadingState = document.getElementById("loading-state");
@@ -147,6 +151,7 @@ document.querySelectorAll("#view-tabs .tab-btn").forEach((btn) => {
     viewLeady.hidden = currentTab !== "leady";
     viewKlienci.hidden = currentTab !== "klienci";
     statusFilter.hidden = currentTab !== "leady";
+    fieldFilters.hidden = currentTab !== "leady";
     addLeadBtn.hidden = currentTab !== "leady";
     importCsvBtn.hidden = currentTab !== "leady";
     render();
@@ -212,6 +217,9 @@ function getFilteredLeady() {
   return currentLeady.filter((l) => {
     if (l.numer_klienta) return false;
     if (statusVal && l.status !== statusVal) return false;
+    if (filterMaEmail.checked && !l.email) return false;
+    if (filterMaTelefon.checked && !l.telefon) return false;
+    if (filterMaWww.checked && !l.www) return false;
     if (!q) return true;
     const haystack = [l.nazwa_firmy, l.nip, l.lokalizacja, l.telefon, l.email, l.osoba_kontaktowa]
       .filter(Boolean).join(" ").toLowerCase();
@@ -304,6 +312,9 @@ function renderTable() {
 
 searchInput.addEventListener("input", render);
 statusFilter.addEventListener("change", render);
+filterMaEmail.addEventListener("change", render);
+filterMaTelefon.addEventListener("change", render);
+filterMaWww.addEventListener("change", render);
 
 async function oznaczJakoKlienta(id, nazwa) {
   const potwierdzenie = confirm(
@@ -340,9 +351,9 @@ function renderKlienciTable() {
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
-      <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
+      <td class="cell-mono cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.numer_klienta || "—")}</td>
+      <td class="cell-nazwa" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
-      <td class="cell-mono">${escapeHtml(lead.numer_klienta || "—")}</td>
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
       <td>${lead.data_konca_kontraktu ? new Date(lead.data_konca_kontraktu).toLocaleDateString("pl-PL") : "—"}</td>
       <td class="cell-actions">

@@ -58,6 +58,11 @@
         <option value="do_zadzwonienia">Do zadzwonienia</option>
         <option value="zamkniete">Zamknięte</option>
       </select>
+      <div class="field-filters" id="field-filters">
+        <label><input type="checkbox" id="filter-ma-email"> Ma e-mail</label>
+        <label><input type="checkbox" id="filter-ma-telefon"> Ma telefon</label>
+        <label><input type="checkbox" id="filter-ma-www"> Ma www</label>
+      </div>
       <button id="add-lead-btn" class="btn-primary">+ Dodaj firmę</button>
       <button id="import-csv-btn" class="btn-ghost">Importuj CSV</button>
       <input type="file" id="csv-input" accept=".csv" hidden>
@@ -100,9 +105,9 @@
         <table id="klienci-table">
           <thead>
             <tr>
+              <th>Nr klienta</th>
               <th>Firma</th>
               <th>Lokalizacja</th>
-              <th>Nr klienta</th>
               <th>Klientem od</th>
               <th>Koniec kontraktu</th>
               <th class="cell-actions"></th>

@@ -190,6 +190,25 @@ body {
   background: white;
 }
 
+.field-filters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 4px;
+}
+
+.field-filters label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.field-filters input[type="checkbox"] { cursor: pointer; }
+
 .tabs {
   display: flex;
   gap: 24px;
@@ -362,9 +381,9 @@ thead th:nth-child(3) { width: 22%; }
 thead th:nth-child(4) { width: 22%; }
 #leady-table thead th.cell-actions { width: 240px; }
 
-#klienci-table thead th:nth-child(1) { width: 22%; }
-#klienci-table thead th:nth-child(2) { width: 16%; }
-#klienci-table thead th:nth-child(3) { width: 13%; }
+#klienci-table thead th:nth-child(1) { width: 12%; }
+#klienci-table thead th:nth-child(2) { width: 24%; }
+#klienci-table thead th:nth-child(3) { width: 16%; }
 #klienci-table thead th:nth-child(4) { width: 15%; }
 #klienci-table thead th:nth-child(5) { width: 15%; }
 #klienci-table thead th.cell-actions { width: 170px; }
