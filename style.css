@@ -283,6 +283,10 @@ thead th {
   color: var(--ink-soft);
   border-bottom: 1px solid var(--paper-dim);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
 }
 
 tbody td {
@@ -308,7 +312,7 @@ tbody tr:hover { background: #fbfaf7; }
   white-space: nowrap;
 }
 
-thead th.cell-actions { background: white; z-index: 1; }
+thead th.cell-actions { background: white; z-index: 3; }
 
 tbody tr:hover .cell-actions { background: #fbfaf7; }
 
