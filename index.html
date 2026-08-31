@@ -59,9 +59,12 @@
         <option value="zamkniete">Zamknięte</option>
       </select>
       <div class="field-filters" id="field-filters">
-        <label><input type="checkbox" id="filter-ma-email"> Ma e-mail</label>
-        <label><input type="checkbox" id="filter-ma-telefon"> Ma telefon</label>
-        <label><input type="checkbox" id="filter-ma-www"> Ma www</label>
+        <button type="button" class="btn-ghost" id="filter-toggle-btn">Filtry <span id="filter-count-badge"></span> ▾</button>
+        <div class="filter-panel" id="filter-panel" hidden>
+          <label><input type="checkbox" id="filter-ma-email"> E-mail</label>
+          <label><input type="checkbox" id="filter-ma-telefon"> Telefon</label>
+          <label><input type="checkbox" id="filter-ma-www"> Www</label>
+        </div>
       </div>
       <button id="add-lead-btn" class="btn-primary">+ Dodaj firmę</button>
       <button id="import-csv-btn" class="btn-ghost">Importuj CSV</button>
@@ -72,6 +75,8 @@
       <button type="button" class="tab-btn active" data-tab="leady">Leady</button>
       <button type="button" class="tab-btn" data-tab="klienci">Klienci</button>
     </div>
+
+    <div class="results-count" id="results-count"></div>
 
     <div id="view-leady">
       <div class="stats-row" id="stats-row"></div>

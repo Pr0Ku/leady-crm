@@ -29,9 +29,13 @@ const logoutBtn = document.getElementById("logout-btn");
 const searchInput = document.getElementById("search-input");
 const statusFilter = document.getElementById("status-filter");
 const fieldFilters = document.getElementById("field-filters");
+const filterToggleBtn = document.getElementById("filter-toggle-btn");
+const filterPanel = document.getElementById("filter-panel");
+const filterCountBadge = document.getElementById("filter-count-badge");
 const filterMaEmail = document.getElementById("filter-ma-email");
 const filterMaTelefon = document.getElementById("filter-ma-telefon");
 const filterMaWww = document.getElementById("filter-ma-www");
+const resultsCount = document.getElementById("results-count");
 const tbody = document.getElementById("leady-tbody");
 const emptyState = document.getElementById("empty-state");
 const loadingState = document.getElementById("loading-state");
@@ -166,6 +170,24 @@ function render() {
   }
 }
 
+// -------------------- ROZWIJANY PANEL FILTRÓW (Leady) --------------------
+
+filterToggleBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  filterPanel.hidden = !filterPanel.hidden;
+});
+
+document.addEventListener("click", (e) => {
+  if (!filterPanel.hidden && !fieldFilters.contains(e.target)) {
+    filterPanel.hidden = true;
+  }
+});
+
+function updateFilterBadge() {
+  const aktywne = [filterMaEmail, filterMaTelefon, filterMaWww].filter((cb) => cb.checked).length;
+  filterCountBadge.textContent = aktywne > 0 ? `(${aktywne})` : "";
+}
+
 // -------------------- POBIERANIE / RENDEROWANIE LEADÓW --------------------
 
 async function loadLeady() {
@@ -242,6 +264,7 @@ function getFilteredKlienci() {
 function renderTable() {
   const filtered = getFilteredLeady();
   emptyState.hidden = filtered.length !== 0;
+  resultsCount.textContent = `Znaleziono: ${filtered.length}`;
   tbody.innerHTML = "";
 
   filtered.forEach((lead) => {
@@ -312,9 +335,12 @@ function renderTable() {
 
 searchInput.addEventListener("input", render);
 statusFilter.addEventListener("change", render);
-filterMaEmail.addEventListener("change", render);
-filterMaTelefon.addEventListener("change", render);
-filterMaWww.addEventListener("change", render);
+[filterMaEmail, filterMaTelefon, filterMaWww].forEach((cb) => {
+  cb.addEventListener("change", () => {
+    updateFilterBadge();
+    render();
+  });
+});
 
 async function oznaczJakoKlienta(id, nazwa) {
   const potwierdzenie = confirm(
@@ -345,6 +371,7 @@ async function oznaczJakoKlienta(id, nazwa) {
 function renderKlienciTable() {
   const filtered = getFilteredKlienci();
   emptyStateKlienci.hidden = filtered.length !== 0;
+  resultsCount.textContent = `Znaleziono: ${filtered.length}`;
   klienciTbody.innerHTML = "";
 
   filtered.forEach((lead) => {
