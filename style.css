@@ -501,14 +501,16 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
   margin-bottom: 4px;
 }
 
-.notatka-form {
+.notatka-form,
+.notatka-lead-form {
   display: flex;
   gap: 8px;
   max-width: 560px;
   align-items: flex-start;
 }
 
-.notatka-form textarea {
+.notatka-form textarea,
+.notatka-lead-form textarea {
   flex: 1;
   padding: 8px 10px;
   border: 1px solid var(--paper-dim);
@@ -516,6 +518,25 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
   font-family: var(--font-body);
   font-size: 13px;
   resize: vertical;
+}
+
+.notatka-historyczna {
+  background: #fbfaf7;
+  border: 1px dashed var(--paper-dim);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-size: 13px;
+  margin-bottom: 8px;
+  max-width: 560px;
+}
+
+.notatka-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
 }
 
 @media (max-width: 700px) {
@@ -858,6 +879,23 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
   justify-content: center;
   font-size: 10.5px;
   font-weight: 700;
+}
+
+.czat-unread-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red, #d64545);
+  display: inline-block;
+}
+
+.czat-toggle-mruga {
+  animation: czat-mrugniecie 1s ease-in-out infinite;
+}
+
+@keyframes czat-mrugniecie {
+  0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+  50% { box-shadow: 0 4px 14px rgba(0,0,0,0.2), 0 0 0 6px rgba(214,69,69,0.35); }
 }
 
 .czat-widget {

@@ -159,8 +159,6 @@
         </select>
       </label>
       <label>Przypisane do<select id="f-przypisane"><option value="">— brak —</option></select></label>
-      <label>Notatki<textarea id="f-notatki" rows="3"></textarea></label>
-
       <div class="modal-actions">
         <button type="button" id="modal-cancel" class="btn-ghost">Anuluj</button>
         <button type="submit" class="btn-primary">Zapisz</button>
@@ -199,6 +197,7 @@
 
 <button id="czat-toggle" class="czat-toggle" hidden>
   Czat
+  <span id="czat-unread-dot" class="czat-unread-dot" hidden></span>
   <span id="czat-badge" class="czat-badge" hidden>0</span>
 </button>
 

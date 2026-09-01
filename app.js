@@ -75,6 +75,7 @@ const zgloszeniaList = document.getElementById("zgloszenia-list");
 
 const czatToggle = document.getElementById("czat-toggle");
 const czatBadge = document.getElementById("czat-badge");
+const czatUnreadDot = document.getElementById("czat-unread-dot");
 const czatWidget = document.getElementById("czat-widget");
 const czatClose = document.getElementById("czat-close");
 const czatForm = document.getElementById("czat-form");
@@ -335,7 +336,17 @@ function renderTable() {
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
           <div><span class="details-label">E-mail</span><div>${escapeHtml(lead.email || "—")}</div></div>
           <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
-          <div class="details-notatki"><span class="details-label">Notatki</span><div>${escapeHtml(lead.notatki || "—")}</div></div>
+          <div class="details-notatki">
+            <span class="details-label">Notatki</span>
+            ${lead.notatki ? `<div class="notatka-historyczna">${escapeHtml(lead.notatki)}<span class="notatka-tag">stara notatka</span></div>` : ""}
+            <div class="notatki-thread" id="notatki-lead-thread-${lead.id}">
+              <p class="zgloszenia-loading">Wczytuję notatki…</p>
+            </div>
+            <form class="notatka-lead-form" data-id="${lead.id}">
+              <textarea rows="2" placeholder="Dodaj notatkę…" required></textarea>
+              <button type="submit" class="btn-primary">Dodaj</button>
+            </form>
+          </div>
         </div>
       </td>
     `;
@@ -343,9 +354,25 @@ function renderTable() {
   });
 
   tbody.querySelectorAll(".cell-clickable").forEach((cell) => {
-    cell.addEventListener("click", () => {
+    cell.addEventListener("click", async () => {
       const details = tbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
-      if (details) details.hidden = !details.hidden;
+      if (!details) return;
+      details.hidden = !details.hidden;
+      if (!details.hidden && details.dataset.notatkiLoaded !== "1") {
+        details.dataset.notatkiLoaded = "1";
+        await loadNotatkiLeada(cell.dataset.toggle);
+      }
+    });
+  });
+
+  tbody.querySelectorAll(".notatka-lead-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const textarea = form.querySelector("textarea");
+      const tresc = textarea.value.trim();
+      if (!tresc) return;
+      await dodajNotatkeLeada(form.dataset.id, tresc);
+      textarea.value = "";
     });
   });
 
@@ -543,6 +570,60 @@ async function dodajNotatke(leadId, tresc) {
   }
 }
 
+// -------------------- WĄTEK NOTATEK LEADA --------------------
+
+let notatkiLeadaCache = {};
+
+async function loadNotatkiLeada(leadId) {
+  const { data, error } = await supabaseClient
+    .from("notatki_leada")
+    .select("*")
+    .eq("lead_id", leadId)
+    .order("utworzono_o", { ascending: true });
+
+  const container = document.getElementById(`notatki-lead-thread-${leadId}`);
+
+  if (error) {
+    if (container) container.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania notatek.</p>`;
+    return;
+  }
+
+  notatkiLeadaCache[leadId] = data || [];
+  renderNotatkiLeadaThread(leadId);
+}
+
+function renderNotatkiLeadaThread(leadId) {
+  const container = document.getElementById(`notatki-lead-thread-${leadId}`);
+  if (!container) return;
+  const notatki = notatkiLeadaCache[leadId] || [];
+
+  if (notatki.length === 0) {
+    container.innerHTML = `<p class="zgloszenia-loading">Brak notatek.</p>`;
+    return;
+  }
+
+  container.innerHTML = notatki.map((n) => `
+    <div class="notatka-item">
+      <div class="notatka-meta">${escapeHtml(nazwaDla(n.autor) || "—")} · ${new Date(n.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div>${escapeHtml(n.tresc)}</div>
+    </div>
+  `).join("");
+}
+
+async function dodajNotatkeLeada(leadId, tresc) {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  const { error } = await supabaseClient
+    .from("notatki_leada")
+    .insert({ lead_id: leadId, autor: user.email, tresc });
+
+  if (error) {
+    showToast("Nie udało się dodać notatki: " + error.message, true);
+  } else {
+    await loadNotatkiLeada(leadId);
+    showToast("Notatka dodana.");
+  }
+}
+
 async function updateKoniecKontraktu(id, dataKonca) {
   const { error } = await supabaseClient.from("leady").update({ data_konca_kontraktu: dataKonca }).eq("id", id);
   if (error) {
@@ -663,7 +744,6 @@ function openModal(id = null) {
     document.getElementById("f-osoba").value = lead.osoba_kontaktowa || "";
     document.getElementById("f-status").value = lead.status || "nowy";
     populatePrzypisaneSelect(lead.przypisane_do || "");
-    document.getElementById("f-notatki").value = lead.notatki || "";
   } else {
     modalTitle.textContent = "Dodaj firmę";
     populatePrzypisaneSelect("");
@@ -695,7 +775,6 @@ leadForm.addEventListener("submit", async (e) => {
     osoba_kontaktowa: document.getElementById("f-osoba").value.trim() || null,
     status: document.getElementById("f-status").value,
     przypisane_do: document.getElementById("f-przypisane").value.trim() || null,
-    notatki: document.getElementById("f-notatki").value.trim() || null,
   };
 
   let error;
@@ -810,7 +889,11 @@ zgloszeniaClose.addEventListener("click", () => { zgloszeniaPanel.hidden = true;
 
 czatToggle.addEventListener("click", () => {
   czatWidget.hidden = !czatWidget.hidden;
-  if (!czatWidget.hidden) loadOnlineUsers();
+  if (!czatWidget.hidden) {
+    loadOnlineUsers();
+    loadCzat();
+    oznaczCzatJakoPrzeczytany();
+  }
 });
 czatClose.addEventListener("click", () => { czatWidget.hidden = true; });
 
@@ -1035,6 +1118,7 @@ czatForm.addEventListener("submit", async (e) => {
     showToast("Nie udało się wysłać wiadomości: " + error.message, true);
   } else {
     trescInput.value = "";
+    lastCzatMessageSeenAt = new Date().toISOString();
     await loadCzat();
   }
 });
@@ -1097,11 +1181,51 @@ async function sendHeartbeat() {
 function startHeartbeat() {
   sendHeartbeat();
   heartbeatInterval = setInterval(sendHeartbeat, 60 * 1000);
+  lastCzatMessageSeenAt = new Date().toISOString();
+  czatPollInterval = setInterval(sprawdzNoweWiadomosciCzatu, 20 * 1000);
 }
 
 function stopHeartbeat() {
   if (heartbeatInterval) clearInterval(heartbeatInterval);
   heartbeatInterval = null;
+  if (czatPollInterval) clearInterval(czatPollInterval);
+  czatPollInterval = null;
+}
+
+// -------------------- NIEPRZECZYTANE WIADOMOŚCI CZATU --------------------
+
+let lastCzatMessageSeenAt = null;
+let czatPollInterval = null;
+
+async function sprawdzNoweWiadomosciCzatu() {
+  const { data, error } = await supabaseClient
+    .from("czat_ogolny")
+    .select("autor, utworzono_o")
+    .order("utworzono_o", { ascending: false })
+    .limit(1);
+
+  if (error || !data || data.length === 0) return;
+  const najnowsza = data[0];
+
+  if (!czatWidget.hidden) {
+    // Okno otwarte - po prostu dociągnij ewentualną nową wiadomość.
+    if (najnowsza.utworzono_o > lastCzatMessageSeenAt) {
+      await loadCzat();
+      lastCzatMessageSeenAt = najnowsza.utworzono_o;
+    }
+    return;
+  }
+
+  if (najnowsza.autor !== currentUserEmail && najnowsza.utworzono_o > lastCzatMessageSeenAt) {
+    czatUnreadDot.hidden = false;
+    czatToggle.classList.add("czat-toggle-mruga");
+  }
+}
+
+function oznaczCzatJakoPrzeczytany() {
+  czatUnreadDot.hidden = true;
+  czatToggle.classList.remove("czat-toggle-mruga");
+  lastCzatMessageSeenAt = new Date().toISOString();
 }
 
 // -------------------- LISTA "KTO ONLINE" --------------------
