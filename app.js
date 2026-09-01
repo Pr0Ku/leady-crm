@@ -799,6 +799,7 @@ async function loadZgloszenia() {
 }
 
 const TYP_LABELS = { blad: "Błąd", pomysl: "Pomysł", inne: "Inne" };
+let komentarzeCache = {};
 
 function renderZgloszeniaList(zgloszenia) {
   if (zgloszenia.length === 0) {
@@ -820,9 +821,21 @@ function renderZgloszeniaList(zgloszenia) {
         <div class="zgloszenie-tresc">${escapeHtml(z.tresc)}</div>
         <div class="zgloszenie-footer">
           <span class="zgloszenie-status-label">${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</span>
-          ${mozeOznaczyc && z.status === "otwarte"
-            ? `<button type="button" class="btn-ghost zgloszenie-done-btn" data-id="${z.id}">Oznacz jako zrobione</button>`
-            : ""}
+          <div class="zgloszenie-footer-actions">
+            <button type="button" class="zgloszenie-reply-toggle" data-id="${z.id}">Odpowiedz</button>
+            ${mozeOznaczyc && z.status === "otwarte"
+              ? `<button type="button" class="btn-ghost zgloszenie-done-btn" data-id="${z.id}">Oznacz jako zrobione</button>`
+              : ""}
+          </div>
+        </div>
+        <div class="zgloszenie-thread" id="zgloszenie-thread-${z.id}" hidden>
+          <div class="zgloszenie-komentarze" id="zgloszenie-komentarze-${z.id}">
+            <p class="zgloszenia-loading">Wczytuję…</p>
+          </div>
+          <form class="zgloszenie-komentarz-form" data-id="${z.id}">
+            <textarea rows="2" placeholder="Napisz odpowiedź…" required></textarea>
+            <button type="submit" class="btn-primary">Wyślij</button>
+          </form>
         </div>
       </div>
     `;
@@ -831,6 +844,76 @@ function renderZgloszeniaList(zgloszenia) {
   zgloszeniaList.querySelectorAll(".zgloszenie-done-btn").forEach((btn) => {
     btn.addEventListener("click", () => oznaczZgloszenieZrobione(btn.dataset.id));
   });
+
+  zgloszeniaList.querySelectorAll(".zgloszenie-reply-toggle").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const thread = document.getElementById(`zgloszenie-thread-${id}`);
+      thread.hidden = !thread.hidden;
+      if (!thread.hidden && !komentarzeCache[id]) {
+        await loadKomentarze(id);
+      }
+    });
+  });
+
+  zgloszeniaList.querySelectorAll(".zgloszenie-komentarz-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const textarea = form.querySelector("textarea");
+      const tresc = textarea.value.trim();
+      if (!tresc) return;
+      await dodajKomentarz(form.dataset.id, tresc);
+      textarea.value = "";
+    });
+  });
+}
+
+async function loadKomentarze(zgloszenieId) {
+  const { data, error } = await supabaseClient
+    .from("zgloszenia_komentarze")
+    .select("*")
+    .eq("zgloszenie_id", zgloszenieId)
+    .order("utworzono_o", { ascending: true });
+
+  const container = document.getElementById(`zgloszenie-komentarze-${zgloszenieId}`);
+
+  if (error) {
+    if (container) container.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania.</p>`;
+    return;
+  }
+
+  komentarzeCache[zgloszenieId] = data || [];
+  renderKomentarze(zgloszenieId);
+}
+
+function renderKomentarze(zgloszenieId) {
+  const container = document.getElementById(`zgloszenie-komentarze-${zgloszenieId}`);
+  if (!container) return;
+  const komentarze = komentarzeCache[zgloszenieId] || [];
+
+  if (komentarze.length === 0) {
+    container.innerHTML = `<p class="zgloszenia-loading">Brak odpowiedzi.</p>`;
+    return;
+  }
+
+  container.innerHTML = komentarze.map((k) => `
+    <div class="zgloszenie-komentarz">
+      <div class="zgloszenie-komentarz-meta">${escapeHtml(k.autor)} · ${new Date(k.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div>${escapeHtml(k.tresc)}</div>
+    </div>
+  `).join("");
+}
+
+async function dodajKomentarz(zgloszenieId, tresc) {
+  const { error } = await supabaseClient
+    .from("zgloszenia_komentarze")
+    .insert({ zgloszenie_id: zgloszenieId, autor: currentUserEmail, tresc });
+
+  if (error) {
+    showToast("Nie udało się wysłać odpowiedzi: " + error.message, true);
+  } else {
+    await loadKomentarze(zgloszenieId);
+  }
 }
 
 async function oznaczZgloszenieZrobione(id) {
