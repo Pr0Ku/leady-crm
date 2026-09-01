@@ -163,7 +163,7 @@ body {
   color: #9aa5b1;
 }
 
-.main { padding: 24px 28px 60px 300px; max-width: 1700px; margin: 0 auto; }
+.main { padding: 24px 28px 60px; max-width: 1400px; margin: 0 auto; }
 
 .toolbar {
   display: flex;
