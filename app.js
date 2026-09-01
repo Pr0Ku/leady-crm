@@ -17,7 +17,12 @@ let currentLeady = [];
 let currentTab = "leady";
 let notatkiCache = {};
 let currentUserEmail = null;
+let profilesByEmail = {};
 const ADMIN_EMAIL = "janasmaciej@wp.pl";
+
+function nazwaDla(email) {
+  return (profilesByEmail[email] && profilesByEmail[email].trim()) || email;
+}
 
 // -------------------- ELEMENTY DOM --------------------
 const loginScreen = document.getElementById("login-screen");
@@ -516,7 +521,7 @@ function renderNotatkiThread(leadId) {
 
   container.innerHTML = notatki.map((n) => `
     <div class="notatka-item">
-      <div class="notatka-meta">${escapeHtml(n.autor || "—")} · ${new Date(n.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div class="notatka-meta">${escapeHtml(nazwaDla(n.autor) || "—")} · ${new Date(n.utworzono_o).toLocaleString("pl-PL")}</div>
       <div>${escapeHtml(n.tresc)}</div>
     </div>
   `).join("");
@@ -871,7 +876,7 @@ function renderZgloszeniaList(zgloszenia) {
       <div class="zgloszenie-item zgloszenie-${z.status}">
         <div class="zgloszenie-meta">
           <span class="zgloszenie-typ">${TYP_LABELS[z.typ] || z.typ}</span>
-          <span>${escapeHtml(z.autor)} · ${dataStr}</span>
+          <span>${escapeHtml(nazwaDla(z.autor))} · ${dataStr}</span>
         </div>
         <div class="zgloszenie-tresc">${escapeHtml(z.tresc)}</div>
         <div class="zgloszenie-footer">
@@ -953,7 +958,7 @@ function renderKomentarze(zgloszenieId) {
 
   container.innerHTML = komentarze.map((k) => `
     <div class="zgloszenie-komentarz">
-      <div class="zgloszenie-komentarz-meta">${escapeHtml(k.autor)} · ${new Date(k.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div class="zgloszenie-komentarz-meta">${escapeHtml(nazwaDla(k.autor))} · ${new Date(k.utworzono_o).toLocaleString("pl-PL")}</div>
       <div>${escapeHtml(k.tresc)}</div>
     </div>
   `).join("");
@@ -1023,7 +1028,7 @@ async function loadCzat() {
 
   czatList.innerHTML = data.map((m) => `
     <div class="czat-wiadomosc ${m.autor === currentUserEmail ? "czat-wlasna" : ""}">
-      <div class="zgloszenie-komentarz-meta">${escapeHtml(m.autor)} · ${new Date(m.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div class="zgloszenie-komentarz-meta">${escapeHtml(nazwaDla(m.autor))} · ${new Date(m.utworzono_o).toLocaleString("pl-PL")}</div>
       <div>${escapeHtml(m.tresc)}</div>
     </div>
   `).join("");
@@ -1093,6 +1098,10 @@ async function loadOnlineUsers() {
     return;
   }
 
+  profilesByEmail = {};
+  (data || []).forEach((p) => { profilesByEmail[p.email] = p.display_name; });
+  if (currentUserEmail) userEmailEl.textContent = nazwaDla(currentUserEmail);
+
   renderOnlineList(data || []);
 }
 
@@ -1104,6 +1113,7 @@ function renderOnlineList(profiles) {
   }
 
   const teraz = Date.now();
+  const isAdmin = currentUserEmail === ADMIN_EMAIL;
   let aktywnychLiczba = 0;
 
   const wpisy = profiles.map((p) => {
@@ -1130,10 +1140,11 @@ function renderOnlineList(profiles) {
     return `
       <div class="online-item ${klasa}">
         <span class="online-dot"></span>
-        <div>
-          <div class="online-email">${escapeHtml(p.email)}</div>
+        <div class="online-info">
+          <div class="online-email">${escapeHtml(nazwaDla(p.email))}</div>
           <div class="online-status">${opis}</div>
         </div>
+        ${isAdmin ? `<button type="button" class="online-edit-name" data-email="${escapeHtml(p.email)}" title="Zmień wyświetlaną nazwę">✎</button>` : ""}
       </div>
     `;
   }).join("");
@@ -1141,6 +1152,30 @@ function renderOnlineList(profiles) {
   czatRoster.innerHTML = wpisy;
   czatBadge.hidden = aktywnychLiczba === 0;
   czatBadge.textContent = aktywnychLiczba;
+
+  czatRoster.querySelectorAll(".online-edit-name").forEach((btn) => {
+    btn.addEventListener("click", () => edytujNazweUzytkownika(btn.dataset.email));
+  });
+}
+
+async function edytujNazweUzytkownika(email) {
+  const obecna = profilesByEmail[email] || "";
+  const nowaNazwa = window.prompt(`Nazwa wyświetlana dla ${email}:`, obecna);
+  if (nowaNazwa === null) return;
+
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update({ display_name: nowaNazwa.trim() || null })
+    .eq("email", email);
+
+  if (error) {
+    showToast("Nie udało się zapisać nazwy: " + error.message, true);
+  } else {
+    showToast("Nazwa zapisana.");
+    await loadOnlineUsers();
+    await loadCzat();
+    await loadZgloszenia();
+  }
 }
 
 // -------------------- START --------------------
