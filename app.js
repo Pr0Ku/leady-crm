@@ -16,6 +16,8 @@ const STATUS_LABELS = {
 let currentLeady = [];
 let currentTab = "leady";
 let notatkiCache = {};
+let currentUserEmail = null;
+const ADMIN_EMAIL = "janasmaciej@wp.pl";
 
 // -------------------- ELEMENTY DOM --------------------
 const loginScreen = document.getElementById("login-screen");
@@ -56,6 +58,13 @@ const leadForm = document.getElementById("lead-form");
 const modalCancel = document.getElementById("modal-cancel");
 
 const toast = document.getElementById("toast");
+
+const zgloszeniaToggle = document.getElementById("zgloszenia-toggle");
+const zgloszeniaBadge = document.getElementById("zgloszenia-badge");
+const zgloszeniaPanel = document.getElementById("zgloszenia-panel");
+const zgloszeniaClose = document.getElementById("zgloszenia-close");
+const zgloszeniaForm = document.getElementById("zgloszenia-form");
+const zgloszeniaList = document.getElementById("zgloszenia-list");
 
 // -------------------- POMOCNICZE --------------------
 function showToast(msg, isError = false) {
@@ -129,13 +138,18 @@ async function checkSession() {
 function showLogin() {
   loginScreen.hidden = false;
   appScreen.hidden = true;
+  zgloszeniaToggle.hidden = true;
+  zgloszeniaPanel.hidden = true;
 }
 
 function showApp(session) {
   loginScreen.hidden = true;
   appScreen.hidden = false;
   userEmailEl.textContent = session.user.email;
+  currentUserEmail = session.user.email;
+  zgloszeniaToggle.hidden = false;
   loadLeady();
+  loadZgloszenia();
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -734,6 +748,102 @@ function mapCsvRowToLead(row) {
     zrodlo: row["google_place_id"] ? "Google Places" : (row["nip"] ? "CEIDG" : "import CSV"),
     notatki: null,
   };
+}
+
+// -------------------- PANEL ZGŁOSZEŃ --------------------
+
+zgloszeniaToggle.addEventListener("click", () => {
+  zgloszeniaPanel.hidden = !zgloszeniaPanel.hidden;
+});
+
+zgloszeniaClose.addEventListener("click", () => {
+  zgloszeniaPanel.hidden = true;
+});
+
+zgloszeniaForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const typ = document.getElementById("zgloszenie-typ").value;
+  const trescInput = document.getElementById("zgloszenie-tresc");
+  const tresc = trescInput.value.trim();
+  if (!tresc) return;
+
+  const { error } = await supabaseClient
+    .from("zgloszenia")
+    .insert({ typ, tresc, autor: currentUserEmail });
+
+  if (error) {
+    showToast("Nie udało się wysłać zgłoszenia: " + error.message, true);
+  } else {
+    trescInput.value = "";
+    showToast("Zgłoszenie wysłane, dzięki!");
+    await loadZgloszenia();
+  }
+});
+
+async function loadZgloszenia() {
+  const { data, error } = await supabaseClient
+    .from("zgloszenia")
+    .select("*")
+    .order("utworzono_o", { ascending: false });
+
+  if (error) {
+    zgloszeniaList.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania zgłoszeń.</p>`;
+    return;
+  }
+
+  const otwarte = (data || []).filter((z) => z.status === "otwarte").length;
+  zgloszeniaBadge.hidden = otwarte === 0;
+  zgloszeniaBadge.textContent = otwarte;
+
+  renderZgloszeniaList(data || []);
+}
+
+const TYP_LABELS = { blad: "Błąd", pomysl: "Pomysł", inne: "Inne" };
+
+function renderZgloszeniaList(zgloszenia) {
+  if (zgloszenia.length === 0) {
+    zgloszeniaList.innerHTML = `<p class="zgloszenia-loading">Brak zgłoszeń.</p>`;
+    return;
+  }
+
+  const isAdmin = currentUserEmail === ADMIN_EMAIL;
+
+  zgloszeniaList.innerHTML = zgloszenia.map((z) => {
+    const mozeOznaczyc = isAdmin || z.autor === currentUserEmail;
+    const dataStr = new Date(z.utworzono_o).toLocaleString("pl-PL");
+    return `
+      <div class="zgloszenie-item zgloszenie-${z.status}">
+        <div class="zgloszenie-meta">
+          <span class="zgloszenie-typ">${TYP_LABELS[z.typ] || z.typ}</span>
+          <span>${escapeHtml(z.autor)} · ${dataStr}</span>
+        </div>
+        <div class="zgloszenie-tresc">${escapeHtml(z.tresc)}</div>
+        <div class="zgloszenie-footer">
+          <span class="zgloszenie-status-label">${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</span>
+          ${mozeOznaczyc && z.status === "otwarte"
+            ? `<button type="button" class="btn-ghost zgloszenie-done-btn" data-id="${z.id}">Oznacz jako zrobione</button>`
+            : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  zgloszeniaList.querySelectorAll(".zgloszenie-done-btn").forEach((btn) => {
+    btn.addEventListener("click", () => oznaczZgloszenieZrobione(btn.dataset.id));
+  });
+}
+
+async function oznaczZgloszenieZrobione(id) {
+  const { error } = await supabaseClient
+    .from("zgloszenia")
+    .update({ status: "zrobione" })
+    .eq("id", id);
+
+  if (error) {
+    showToast("Nie udało się zaktualizować zgłoszenia: " + error.message, true);
+  } else {
+    await loadZgloszenia();
+  }
 }
 
 // -------------------- START --------------------

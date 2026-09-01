@@ -167,6 +167,32 @@
 
 <div id="toast" class="toast" hidden></div>
 
+<button id="zgloszenia-toggle" class="zgloszenia-toggle" hidden>
+  <span>Zgłoszenia</span>
+  <span id="zgloszenia-badge" class="zgloszenia-badge" hidden>0</span>
+</button>
+
+<div id="zgloszenia-panel" class="zgloszenia-panel" hidden>
+  <div class="zgloszenia-panel-header">
+    <h2>Zgłoszenia</h2>
+    <button type="button" id="zgloszenia-close" class="btn-ghost">✕</button>
+  </div>
+
+  <form id="zgloszenia-form" class="zgloszenia-form">
+    <select id="zgloszenie-typ">
+      <option value="blad">Błąd</option>
+      <option value="pomysl">Pomysł</option>
+      <option value="inne">Inne</option>
+    </select>
+    <textarea id="zgloszenie-tresc" rows="3" placeholder="Opisz co zauważyłeś / proponujesz…" required></textarea>
+    <button type="submit" class="btn-primary">Zgłoś</button>
+  </form>
+
+  <div id="zgloszenia-list" class="zgloszenia-list">
+    <p class="zgloszenia-loading">Wczytuję zgłoszenia…</p>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
