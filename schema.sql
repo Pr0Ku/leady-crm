@@ -20,6 +20,7 @@ create table if not exists public.leady (
     status text not null default 'nowy'
         check (status in ('nowy', 'mail_wyslany', 'zainteresowany', 'niezainteresowany', 'do_zadzwonienia', 'zamkniete')),
     przypisane_do text,          -- email osoby odpowiedzialnej za dalszy kontakt
+    wielkosc_floty integer,      -- liczba pojazdow klienta (do priorytetyzacji leadow)
     notatki text,
     numer_klienta text unique,   -- np. 'C0001', nadawany automatycznie przy konwersji na klienta
     klientem_od timestamptz,     -- kiedy lead zostal oznaczony jako klient

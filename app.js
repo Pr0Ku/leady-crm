@@ -309,6 +309,7 @@ function renderTable() {
     tr.innerHTML = `
       <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
+      <td class="cell-mono">${lead.wielkosc_floty != null ? lead.wielkosc_floty : "—"}</td>
       <td>
         <select class="status-select status-${lead.status}" data-id="${lead.id}">
           ${Object.entries(STATUS_LABELS).map(([key, label]) =>
@@ -330,7 +331,7 @@ function renderTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = lead.id;
     trDetails.innerHTML = `
-      <td colspan="5">
+      <td colspan="6">
         <div class="details-grid">
           <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
@@ -742,6 +743,7 @@ function openModal(id = null) {
     document.getElementById("f-email").value = lead.email || "";
     document.getElementById("f-www").value = lead.www || "";
     document.getElementById("f-osoba").value = lead.osoba_kontaktowa || "";
+    document.getElementById("f-flota").value = lead.wielkosc_floty != null ? lead.wielkosc_floty : "";
     document.getElementById("f-status").value = lead.status || "nowy";
     populatePrzypisaneSelect(lead.przypisane_do || "");
   } else {
@@ -773,6 +775,9 @@ leadForm.addEventListener("submit", async (e) => {
     email: document.getElementById("f-email").value.trim() || null,
     www: document.getElementById("f-www").value.trim() || null,
     osoba_kontaktowa: document.getElementById("f-osoba").value.trim() || null,
+    wielkosc_floty: document.getElementById("f-flota").value.trim() !== ""
+      ? parseInt(document.getElementById("f-flota").value, 10)
+      : null,
     status: document.getElementById("f-status").value,
     przypisane_do: document.getElementById("f-przypisane").value.trim() || null,
   };
