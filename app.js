@@ -26,6 +26,7 @@ function nazwaDla(email) {
 
 // -------------------- ELEMENTY DOM --------------------
 const loginScreen = document.getElementById("login-screen");
+const setPasswordScreen = document.getElementById("set-password-screen");
 const appScreen = document.getElementById("app-screen");
 const loginForm = document.getElementById("login-form");
 const loginMessage = document.getElementById("login-message");
@@ -173,6 +174,7 @@ async function checkSession() {
 
 function showLogin() {
   loginScreen.hidden = false;
+  setPasswordScreen.hidden = true;
   appScreen.hidden = true;
   zgloszeniaToggle.hidden = true;
   zgloszeniaPanel.hidden = true;
@@ -181,8 +183,15 @@ function showLogin() {
   stopHeartbeat();
 }
 
+function showSetPasswordScreen() {
+  loginScreen.hidden = true;
+  setPasswordScreen.hidden = false;
+  appScreen.hidden = true;
+}
+
 function showApp(session) {
   loginScreen.hidden = true;
+  setPasswordScreen.hidden = true;
   appScreen.hidden = false;
   userEmailEl.textContent = session.user.email;
   currentUserEmail = session.user.email;
@@ -195,10 +204,48 @@ function showApp(session) {
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_IN" && session) {
-    showApp(session);
+  if (event === "PASSWORD_RECOVERY") {
+    showSetPasswordScreen();
+  } else if (event === "SIGNED_IN" && session) {
+    // Jesli uzytkownik jest w trakcie ustawiania nowego hasla (ekran
+    // resetu widoczny), nie przeskakuj od razu do appki - poczekaj az
+    // zapisze nowe haslo.
+    if (setPasswordScreen.hidden) {
+      showApp(session);
+    }
   } else if (event === "SIGNED_OUT") {
     showLogin();
+  }
+});
+
+document.getElementById("set-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const setPasswordMessage = document.getElementById("set-password-message");
+  const nowe = document.getElementById("new-password-input").value;
+  const powtorzone = document.getElementById("new-password-repeat-input").value;
+  const btn = document.getElementById("set-password-btn");
+
+  if (nowe !== powtorzone) {
+    setPasswordMessage.hidden = false;
+    setPasswordMessage.textContent = "Hasła nie są takie same.";
+    setPasswordMessage.classList.add("login-message-error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Zapisuję…";
+
+  const { data, error } = await supabaseClient.auth.updateUser({ password: nowe });
+
+  btn.disabled = false;
+  btn.textContent = "Zapisz hasło";
+
+  if (error) {
+    setPasswordMessage.hidden = false;
+    setPasswordMessage.textContent = "Nie udało się zapisać hasła: " + error.message;
+    setPasswordMessage.classList.add("login-message-error");
+  } else {
+    showApp(data.user ? { user: data.user } : (await supabaseClient.auth.getSession()).data.session);
   }
 });
 
