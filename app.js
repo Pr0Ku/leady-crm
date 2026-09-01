@@ -66,6 +66,18 @@ const zgloszeniaClose = document.getElementById("zgloszenia-close");
 const zgloszeniaForm = document.getElementById("zgloszenia-form");
 const zgloszeniaList = document.getElementById("zgloszenia-list");
 
+const czatToggle = document.getElementById("czat-toggle");
+const czatPanel = document.getElementById("czat-panel");
+const czatClose = document.getElementById("czat-close");
+const czatForm = document.getElementById("czat-form");
+const czatList = document.getElementById("czat-list");
+
+const onlineToggle = document.getElementById("online-toggle");
+const onlineBadge = document.getElementById("online-badge");
+const onlinePanel = document.getElementById("online-panel");
+const onlineClose = document.getElementById("online-close");
+const onlineList = document.getElementById("online-list");
+
 // -------------------- POMOCNICZE --------------------
 function showToast(msg, isError = false) {
   toast.textContent = msg;
@@ -140,6 +152,11 @@ function showLogin() {
   appScreen.hidden = true;
   zgloszeniaToggle.hidden = true;
   zgloszeniaPanel.hidden = true;
+  czatToggle.hidden = true;
+  czatPanel.hidden = true;
+  onlineToggle.hidden = true;
+  onlinePanel.hidden = true;
+  stopHeartbeat();
 }
 
 function showApp(session) {
@@ -148,8 +165,12 @@ function showApp(session) {
   userEmailEl.textContent = session.user.email;
   currentUserEmail = session.user.email;
   zgloszeniaToggle.hidden = false;
+  czatToggle.hidden = false;
+  onlineToggle.hidden = false;
   loadLeady();
   loadZgloszenia();
+  loadCzat();
+  startHeartbeat();
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -750,15 +771,31 @@ function mapCsvRowToLead(row) {
   };
 }
 
-// -------------------- PANEL ZGŁOSZEŃ --------------------
+// -------------------- PANELE BOCZNE (Zgłoszenia / Czat / Online) --------------------
 
-zgloszeniaToggle.addEventListener("click", () => {
-  zgloszeniaPanel.hidden = !zgloszeniaPanel.hidden;
-});
+const SIDE_PANELS = [
+  { toggle: zgloszeniaToggle, panel: zgloszeniaPanel },
+  { toggle: czatToggle, panel: czatPanel },
+  { toggle: onlineToggle, panel: onlinePanel },
+];
 
-zgloszeniaClose.addEventListener("click", () => {
-  zgloszeniaPanel.hidden = true;
+function togglePanel(panel) {
+  const wasHidden = panel.hidden;
+  SIDE_PANELS.forEach((p) => { p.panel.hidden = true; });
+  panel.hidden = !wasHidden;
+}
+
+zgloszeniaToggle.addEventListener("click", () => togglePanel(zgloszeniaPanel));
+zgloszeniaClose.addEventListener("click", () => { zgloszeniaPanel.hidden = true; });
+
+czatToggle.addEventListener("click", () => togglePanel(czatPanel));
+czatClose.addEventListener("click", () => { czatPanel.hidden = true; });
+
+onlineToggle.addEventListener("click", () => {
+  togglePanel(onlinePanel);
+  if (!onlinePanel.hidden) loadOnlineUsers();
 });
+onlineClose.addEventListener("click", () => { onlinePanel.hidden = true; });
 
 zgloszeniaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -927,6 +964,165 @@ async function oznaczZgloszenieZrobione(id) {
   } else {
     await loadZgloszenia();
   }
+}
+
+// -------------------- CZAT OGÓLNY --------------------
+
+czatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const trescInput = document.getElementById("czat-tresc");
+  const tresc = trescInput.value.trim();
+  if (!tresc) return;
+
+  const { error } = await supabaseClient
+    .from("czat_ogolny")
+    .insert({ autor: currentUserEmail, tresc });
+
+  if (error) {
+    showToast("Nie udało się wysłać wiadomości: " + error.message, true);
+  } else {
+    trescInput.value = "";
+    await loadCzat();
+  }
+});
+
+async function loadCzat() {
+  const { data, error } = await supabaseClient
+    .from("czat_ogolny")
+    .select("*")
+    .order("utworzono_o", { ascending: true })
+    .limit(200);
+
+  if (error) {
+    czatList.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania czatu.</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    czatList.innerHTML = `<p class="zgloszenia-loading">Brak wiadomości. Napisz pierwszą!</p>`;
+    return;
+  }
+
+  czatList.innerHTML = data.map((m) => `
+    <div class="czat-wiadomosc ${m.autor === currentUserEmail ? "czat-wlasna" : ""}">
+      <div class="zgloszenie-komentarz-meta">${escapeHtml(m.autor)} · ${new Date(m.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div>${escapeHtml(m.tresc)}</div>
+    </div>
+  `).join("");
+
+  czatList.scrollTop = czatList.scrollHeight;
+}
+
+// -------------------- HEARTBEAT (automatyczny status online) --------------------
+
+let lastLocalActivityAt = Date.now();
+let heartbeatInterval = null;
+
+["mousemove", "keydown", "click", "scroll"].forEach((evt) => {
+  document.addEventListener(evt, () => { lastLocalActivityAt = Date.now(); }, { passive: true });
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    lastLocalActivityAt = Date.now();
+    sendHeartbeat();
+  }
+});
+
+async function sendHeartbeat() {
+  if (!currentUserEmail) return;
+  const bylAktywnyOstatnio10Min = (Date.now() - lastLocalActivityAt) <= 10 * 60 * 1000;
+  const nowIso = new Date().toISOString();
+
+  const payload = { email: currentUserEmail, last_seen: nowIso };
+  if (bylAktywnyOstatnio10Min) payload.last_active = nowIso;
+
+  await supabaseClient.from("profiles").upsert(payload, { onConflict: "email" });
+  loadOnlineUsers();
+}
+
+function startHeartbeat() {
+  sendHeartbeat();
+  heartbeatInterval = setInterval(sendHeartbeat, 60 * 1000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = null;
+}
+
+// -------------------- LISTA "KTO ONLINE" --------------------
+
+function formatRelativeTime(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const minuty = Math.floor(diffMs / 60000);
+  if (minuty < 1) return "przed chwilą";
+  if (minuty < 60) return `${minuty} min temu`;
+  const godziny = Math.floor(minuty / 60);
+  if (godziny < 24) return `${godziny} godz. temu`;
+  const dni = Math.floor(godziny / 24);
+  return `${dni} dni temu`;
+}
+
+async function loadOnlineUsers() {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .order("last_active", { ascending: false });
+
+  if (error) {
+    onlineList.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania listy.</p>`;
+    return;
+  }
+
+  renderOnlineList(data || []);
+}
+
+function renderOnlineList(profiles) {
+  if (profiles.length === 0) {
+    onlineList.innerHTML = `<p class="zgloszenia-loading">Brak danych.</p>`;
+    onlineBadge.hidden = true;
+    return;
+  }
+
+  const teraz = Date.now();
+  let aktywnychLiczba = 0;
+
+  const wpisy = profiles.map((p) => {
+    const minutyOdAktywnosci = (teraz - new Date(p.last_active).getTime()) / 60000;
+    const minutyOdSeen = (teraz - new Date(p.last_seen).getTime()) / 60000;
+
+    let status, klasa;
+    if (minutyOdSeen > 3) {
+      status = "Nieaktywny";
+      klasa = "status-offline";
+    } else if (minutyOdAktywnosci <= 10) {
+      status = "Aktywny";
+      klasa = "status-active";
+      aktywnychLiczba++;
+    } else {
+      status = "Zaraz wracam";
+      klasa = "status-away";
+    }
+
+    const opis = klasa === "status-offline"
+      ? `ostatnio widziany: ${formatRelativeTime(p.last_seen)}`
+      : status;
+
+    return `
+      <div class="online-item ${klasa}">
+        <span class="online-dot"></span>
+        <div>
+          <div class="online-email">${escapeHtml(p.email)}</div>
+          <div class="online-status">${opis}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  onlineList.innerHTML = wpisy;
+  onlineBadge.hidden = aktywnychLiczba === 0;
+  onlineBadge.textContent = aktywnychLiczba;
 }
 
 // -------------------- START --------------------
