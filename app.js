@@ -1246,6 +1246,8 @@ function formatRelativeTime(dateStr) {
   return `${dni} dni temu`;
 }
 
+let profilesInitiallyLoaded = false;
+
 async function loadOnlineUsers() {
   const { data, error } = await supabaseClient
     .from("profiles")
@@ -1262,6 +1264,16 @@ async function loadOnlineUsers() {
   if (currentUserEmail) userEmailEl.textContent = nazwaDla(currentUserEmail);
 
   renderOnlineList(data || []);
+
+  // Pierwsze wczytanie nazw może nastąpić już PO wyrenderowaniu tabeli
+  // leadów/klientów (bo to osobne zapytania) - odśwież ją wtedy raz,
+  // żeby "Przypisane do" pokazało nazwę zamiast maila. Kolejne (cykliczne
+  // co 60s) wczytania już NIE przerysowują tabeli - zwijałoby to rozwinięte
+  // wiersze i przeszkadzało w pracy.
+  if (!profilesInitiallyLoaded) {
+    profilesInitiallyLoaded = true;
+    render();
+  }
 }
 
 function renderOnlineList(profiles) {
@@ -1334,6 +1346,7 @@ async function edytujNazweUzytkownika(email) {
     await loadOnlineUsers();
     await loadCzat();
     await loadZgloszenia();
+    render();
   }
 }
 
