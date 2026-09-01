@@ -1162,6 +1162,13 @@ async function oznaczZgloszenieZrobione(id) {
 
 // -------------------- CZAT OGÓLNY --------------------
 
+document.getElementById("czat-tresc").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    czatForm.requestSubmit();
+  }
+});
+
 czatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const trescInput = document.getElementById("czat-tresc");
