@@ -250,15 +250,18 @@ async function loadLeady() {
 
 let filterDoDzis = false;
 
+function jestPilnyDzis(lead) {
+  const dzisiaj = new Date().toISOString().slice(0, 10);
+  if (lead.termin_kontaktu) return lead.termin_kontaktu <= dzisiaj;
+  return lead.status === "do_zadzwonienia";
+}
+
 function renderStats() {
   const leadyOnly = currentLeady.filter((l) => !l.numer_klienta);
   const counts = {};
   leadyOnly.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
 
-  const dzisiaj = new Date().toISOString().slice(0, 10);
-  const doDzisLiczba = leadyOnly.filter((l) =>
-    l.status === "do_zadzwonienia" || (l.termin_kontaktu && l.termin_kontaktu <= dzisiaj)
-  ).length;
+  const doDzisLiczba = leadyOnly.filter(jestPilnyDzis).length;
 
   statsRow.innerHTML = `
     <div class="stat-pill stat-pill-pilne ${filterDoDzis ? "stat-pill-active" : ""}" data-pilne="1">
@@ -291,12 +294,11 @@ function renderStats() {
 function getFilteredLeady() {
   const q = searchInput.value.trim().toLowerCase();
   const statusVal = statusFilter.value;
-  const dzisiaj = new Date().toISOString().slice(0, 10);
 
   return currentLeady.filter((l) => {
     if (l.numer_klienta) return false;
     if (statusVal && l.status !== statusVal) return false;
-    if (filterDoDzis && !(l.status === "do_zadzwonienia" || (l.termin_kontaktu && l.termin_kontaktu <= dzisiaj))) return false;
+    if (filterDoDzis && !jestPilnyDzis(l)) return false;
     if (filterMaEmail.checked && !l.email) return false;
     if (filterMaTelefon.checked && !l.telefon) return false;
     if (filterMaWww.checked && !l.www) return false;
