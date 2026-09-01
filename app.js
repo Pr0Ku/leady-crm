@@ -67,16 +67,12 @@ const zgloszeniaForm = document.getElementById("zgloszenia-form");
 const zgloszeniaList = document.getElementById("zgloszenia-list");
 
 const czatToggle = document.getElementById("czat-toggle");
-const czatPanel = document.getElementById("czat-panel");
+const czatBadge = document.getElementById("czat-badge");
+const czatWidget = document.getElementById("czat-widget");
 const czatClose = document.getElementById("czat-close");
 const czatForm = document.getElementById("czat-form");
 const czatList = document.getElementById("czat-list");
-
-const onlineToggle = document.getElementById("online-toggle");
-const onlineBadge = document.getElementById("online-badge");
-const onlinePanel = document.getElementById("online-panel");
-const onlineClose = document.getElementById("online-close");
-const onlineList = document.getElementById("online-list");
+const czatRoster = document.getElementById("czat-roster");
 
 // -------------------- POMOCNICZE --------------------
 function showToast(msg, isError = false) {
@@ -153,9 +149,7 @@ function showLogin() {
   zgloszeniaToggle.hidden = true;
   zgloszeniaPanel.hidden = true;
   czatToggle.hidden = true;
-  czatPanel.hidden = true;
-  onlineToggle.hidden = true;
-  onlinePanel.hidden = true;
+  czatWidget.hidden = true;
   stopHeartbeat();
 }
 
@@ -166,7 +160,6 @@ function showApp(session) {
   currentUserEmail = session.user.email;
   zgloszeniaToggle.hidden = false;
   czatToggle.hidden = false;
-  onlineToggle.hidden = false;
   loadLeady();
   loadZgloszenia();
   loadCzat();
@@ -771,31 +764,20 @@ function mapCsvRowToLead(row) {
   };
 }
 
-// -------------------- PANELE BOCZNE (Zgłoszenia / Czat / Online) --------------------
+// -------------------- PANEL ZGŁOSZEŃ (prawa strona) --------------------
 
-const SIDE_PANELS = [
-  { toggle: zgloszeniaToggle, panel: zgloszeniaPanel },
-  { toggle: czatToggle, panel: czatPanel },
-  { toggle: onlineToggle, panel: onlinePanel },
-];
-
-function togglePanel(panel) {
-  const wasHidden = panel.hidden;
-  SIDE_PANELS.forEach((p) => { p.panel.hidden = true; });
-  panel.hidden = !wasHidden;
-}
-
-zgloszeniaToggle.addEventListener("click", () => togglePanel(zgloszeniaPanel));
+zgloszeniaToggle.addEventListener("click", () => {
+  zgloszeniaPanel.hidden = !zgloszeniaPanel.hidden;
+});
 zgloszeniaClose.addEventListener("click", () => { zgloszeniaPanel.hidden = true; });
 
-czatToggle.addEventListener("click", () => togglePanel(czatPanel));
-czatClose.addEventListener("click", () => { czatPanel.hidden = true; });
+// -------------------- CZAT (lewy dolny róg) --------------------
 
-onlineToggle.addEventListener("click", () => {
-  togglePanel(onlinePanel);
-  if (!onlinePanel.hidden) loadOnlineUsers();
+czatToggle.addEventListener("click", () => {
+  czatWidget.hidden = !czatWidget.hidden;
+  if (!czatWidget.hidden) loadOnlineUsers();
 });
-onlineClose.addEventListener("click", () => { onlinePanel.hidden = true; });
+czatClose.addEventListener("click", () => { czatWidget.hidden = true; });
 
 zgloszeniaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1071,7 +1053,7 @@ async function loadOnlineUsers() {
     .order("last_active", { ascending: false });
 
   if (error) {
-    onlineList.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania listy.</p>`;
+    czatRoster.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania listy.</p>`;
     return;
   }
 
@@ -1080,8 +1062,8 @@ async function loadOnlineUsers() {
 
 function renderOnlineList(profiles) {
   if (profiles.length === 0) {
-    onlineList.innerHTML = `<p class="zgloszenia-loading">Brak danych.</p>`;
-    onlineBadge.hidden = true;
+    czatRoster.innerHTML = `<p class="zgloszenia-loading">Brak danych.</p>`;
+    czatBadge.hidden = true;
     return;
   }
 
@@ -1106,7 +1088,7 @@ function renderOnlineList(profiles) {
     }
 
     const opis = klasa === "status-offline"
-      ? `ostatnio widziany: ${formatRelativeTime(p.last_seen)}`
+      ? `ostatnio: ${formatRelativeTime(p.last_seen)}`
       : status;
 
     return `
@@ -1120,9 +1102,9 @@ function renderOnlineList(profiles) {
     `;
   }).join("");
 
-  onlineList.innerHTML = wpisy;
-  onlineBadge.hidden = aktywnychLiczba === 0;
-  onlineBadge.textContent = aktywnychLiczba;
+  czatRoster.innerHTML = wpisy;
+  czatBadge.hidden = aktywnychLiczba === 0;
+  czatBadge.textContent = aktywnychLiczba;
 }
 
 // -------------------- START --------------------

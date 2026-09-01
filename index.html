@@ -167,16 +167,9 @@
 
 <div id="toast" class="toast" hidden></div>
 
-<button id="zgloszenia-toggle" class="side-tab" hidden>
+<button id="zgloszenia-toggle" class="zgloszenia-toggle" hidden>
   <span>Zgłoszenia</span>
   <span id="zgloszenia-badge" class="zgloszenia-badge" hidden>0</span>
-</button>
-<button id="czat-toggle" class="side-tab" hidden>
-  <span>Czat</span>
-</button>
-<button id="online-toggle" class="side-tab" hidden>
-  <span>Online</span>
-  <span id="online-badge" class="zgloszenia-badge" hidden>0</span>
 </button>
 
 <div id="zgloszenia-panel" class="zgloszenia-panel" hidden>
@@ -200,31 +193,29 @@
   </div>
 </div>
 
-<div id="czat-panel" class="zgloszenia-panel" hidden>
-  <div class="zgloszenia-panel-header">
-    <h2>Czat ogólny</h2>
+<button id="czat-toggle" class="czat-toggle" hidden>
+  Czat
+  <span id="czat-badge" class="czat-badge" hidden>0</span>
+</button>
+
+<div id="czat-widget" class="czat-widget" hidden>
+  <div class="czat-widget-header">
+    <h2>Czat</h2>
     <button type="button" id="czat-close" class="btn-ghost">✕</button>
   </div>
 
-  <div id="czat-list" class="zgloszenia-list czat-list">
+  <div id="czat-roster" class="czat-roster">
+    <p class="zgloszenia-loading">Wczytuję…</p>
+  </div>
+
+  <div id="czat-list" class="czat-messages">
     <p class="zgloszenia-loading">Wczytuję wiadomości…</p>
   </div>
 
-  <form id="czat-form" class="zgloszenia-form czat-form">
-    <textarea id="czat-tresc" rows="2" placeholder="Napisz wiadomość…" required></textarea>
+  <form id="czat-form" class="czat-form">
+    <textarea id="czat-tresc" rows="1" placeholder="Napisz wiadomość…" required></textarea>
     <button type="submit" class="btn-primary">Wyślij</button>
   </form>
-</div>
-
-<div id="online-panel" class="zgloszenia-panel" hidden>
-  <div class="zgloszenia-panel-header">
-    <h2>Kto online</h2>
-    <button type="button" id="online-close" class="btn-ghost">✕</button>
-  </div>
-
-  <div id="online-list" class="zgloszenia-list">
-    <p class="zgloszenia-loading">Wczytuję…</p>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
