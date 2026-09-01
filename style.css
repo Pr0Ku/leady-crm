@@ -28,6 +28,34 @@
   font-family: var(--font-body);
 }
 
+#new-version-banner {
+  background: var(--ink);
+  color: white;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+#new-version-refresh {
+  background: var(--amber);
+  color: var(--navy-950);
+  border: none;
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+#new-version-refresh:hover { filter: brightness(0.95); }
+
 [hidden] { display: none !important; }
 
 body {

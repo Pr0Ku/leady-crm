@@ -63,6 +63,8 @@ const leadForm = document.getElementById("lead-form");
 const modalCancel = document.getElementById("modal-cancel");
 
 const toast = document.getElementById("toast");
+const newVersionBanner = document.getElementById("new-version-banner");
+const newVersionRefreshBtn = document.getElementById("new-version-refresh");
 
 const zgloszeniaToggle = document.getElementById("zgloszenia-toggle");
 const zgloszeniaBadge = document.getElementById("zgloszenia-badge");
@@ -1180,3 +1182,31 @@ async function edytujNazweUzytkownika(email) {
 
 // -------------------- START --------------------
 checkSession();
+initVersionCheck();
+
+// -------------------- WYKRYWANIE NOWEJ WERSJI APLIKACJI --------------------
+
+let loadedVersion = null;
+
+async function fetchVersion() {
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.version;
+  } catch {
+    return null;
+  }
+}
+
+async function initVersionCheck() {
+  loadedVersion = await fetchVersion();
+  setInterval(async () => {
+    const nowa = await fetchVersion();
+    if (nowa && loadedVersion && nowa !== loadedVersion) {
+      newVersionBanner.hidden = false;
+    }
+  }, 90 * 1000);
+}
+
+newVersionRefreshBtn.addEventListener("click", () => location.reload());
