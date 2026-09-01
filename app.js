@@ -248,33 +248,55 @@ async function loadLeady() {
   render();
 }
 
+let filterDoDzis = false;
+
 function renderStats() {
   const leadyOnly = currentLeady.filter((l) => !l.numer_klienta);
   const counts = {};
   leadyOnly.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
 
-  statsRow.innerHTML = Object.entries(STATUS_LABELS).map(([key, label]) => `
+  const dzisiaj = new Date().toISOString().slice(0, 10);
+  const doDzisLiczba = leadyOnly.filter((l) =>
+    l.status === "do_zadzwonienia" || (l.termin_kontaktu && l.termin_kontaktu <= dzisiaj)
+  ).length;
+
+  statsRow.innerHTML = `
+    <div class="stat-pill stat-pill-pilne ${filterDoDzis ? "stat-pill-active" : ""}" data-pilne="1">
+      <span class="stat-count">${doDzisLiczba}</span>
+      <span class="stat-label">Do dziś</span>
+    </div>
+  ` + Object.entries(STATUS_LABELS).map(([key, label]) => `
     <div class="stat-pill" data-status="${key}">
       <span class="stat-count">${counts[key] || 0}</span>
       <span class="stat-label">${label}</span>
     </div>
   `).join("");
 
-  statsRow.querySelectorAll(".stat-pill").forEach((pill) => {
+  statsRow.querySelectorAll(".stat-pill[data-status]").forEach((pill) => {
     pill.addEventListener("click", () => {
+      filterDoDzis = false;
       statusFilter.value = pill.dataset.status;
-      renderTable();
+      render();
     });
+  });
+
+  const pilnaPill = statsRow.querySelector(".stat-pill-pilne");
+  pilnaPill.addEventListener("click", () => {
+    filterDoDzis = !filterDoDzis;
+    statusFilter.value = "";
+    render();
   });
 }
 
 function getFilteredLeady() {
   const q = searchInput.value.trim().toLowerCase();
   const statusVal = statusFilter.value;
+  const dzisiaj = new Date().toISOString().slice(0, 10);
 
   return currentLeady.filter((l) => {
     if (l.numer_klienta) return false;
     if (statusVal && l.status !== statusVal) return false;
+    if (filterDoDzis && !(l.status === "do_zadzwonienia" || (l.termin_kontaktu && l.termin_kontaktu <= dzisiaj))) return false;
     if (filterMaEmail.checked && !l.email) return false;
     if (filterMaTelefon.checked && !l.telefon) return false;
     if (filterMaWww.checked && !l.www) return false;
@@ -337,6 +359,10 @@ function renderTable() {
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
           <div><span class="details-label">E-mail</span><div>${escapeHtml(lead.email || "—")}</div></div>
           <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
+          <div>
+            <span class="details-label">Termin kolejnego kontaktu</span>
+            <input type="date" class="termin-kontaktu-input" data-id="${lead.id}" value="${lead.termin_kontaktu || ""}">
+          </div>
           <div class="details-notatki">
             <span class="details-label">Notatki</span>
             ${lead.notatki ? `<div class="notatka-historyczna">${escapeHtml(lead.notatki)}<span class="notatka-tag">stara notatka</span></div>` : ""}
@@ -374,6 +400,12 @@ function renderTable() {
       if (!tresc) return;
       await dodajNotatkeLeada(form.dataset.id, tresc);
       textarea.value = "";
+    });
+  });
+
+  tbody.querySelectorAll(".termin-kontaktu-input").forEach((input) => {
+    input.addEventListener("change", async (e) => {
+      await updateTerminKontaktu(e.target.dataset.id, e.target.value || null);
     });
   });
 
@@ -633,6 +665,18 @@ async function updateKoniecKontraktu(id, dataKonca) {
     const lead = currentLeady.find((l) => l.id === id);
     if (lead) lead.data_konca_kontraktu = dataKonca;
     showToast("Data zapisana.");
+  }
+}
+
+async function updateTerminKontaktu(id, termin) {
+  const { error } = await supabaseClient.from("leady").update({ termin_kontaktu: termin }).eq("id", id);
+  if (error) {
+    showToast("Nie udało się zapisać terminu: " + error.message, true);
+  } else {
+    const lead = currentLeady.find((l) => l.id === id);
+    if (lead) lead.termin_kontaktu = termin;
+    renderStats();
+    showToast("Termin zapisany.");
   }
 }
 

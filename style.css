@@ -365,6 +365,20 @@ body {
 
 .stat-label { color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
 
+.stat-pill-pilne {
+  border-color: var(--red, #b8503f);
+}
+
+.stat-pill-pilne .stat-count { color: var(--red, #b8503f); }
+
+.stat-pill-active {
+  background: var(--red, #b8503f);
+  border-color: var(--red, #b8503f);
+}
+
+.stat-pill-active .stat-count,
+.stat-pill-active .stat-label { color: white; }
+
 /* ---------- TABELA ---------- */
 .table-wrap {
   background: white;
@@ -467,7 +481,8 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
 
 .details-notatki { grid-column: 1 / -1; }
 
-.kontrakt-input {
+.kontrakt-input,
+.termin-kontaktu-input {
   margin-top: 2px;
   padding: 6px 8px;
   border: 1px solid var(--paper-dim);
