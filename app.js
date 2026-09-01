@@ -790,9 +790,11 @@ function openModal(id = null) {
     document.getElementById("f-flota").value = lead.wielkosc_floty != null ? lead.wielkosc_floty : "";
     document.getElementById("f-status").value = lead.status || "nowy";
     populatePrzypisaneSelect(lead.przypisane_do || "");
+    document.getElementById("f-status-label").hidden = !!lead.numer_klienta;
   } else {
     modalTitle.textContent = "Dodaj firmę";
     populatePrzypisaneSelect("");
+    document.getElementById("f-status-label").hidden = false;
   }
 
   modal.hidden = false;
@@ -822,9 +824,14 @@ leadForm.addEventListener("submit", async (e) => {
     wielkosc_floty: document.getElementById("f-flota").value.trim() !== ""
       ? parseInt(document.getElementById("f-flota").value, 10)
       : null,
-    status: document.getElementById("f-status").value,
     przypisane_do: document.getElementById("f-przypisane").value.trim() || null,
   };
+
+  // Status ma sens tylko dla leadow - jesli pole jest ukryte (edycja klienta),
+  // nie dolaczaj go do zapisu, zeby nie nadpisac wartosci "po cichu".
+  if (!document.getElementById("f-status-label").hidden) {
+    payload.status = document.getElementById("f-status").value;
+  }
 
   let error;
   if (id) {
