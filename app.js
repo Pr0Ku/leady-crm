@@ -779,6 +779,42 @@ czatToggle.addEventListener("click", () => {
 });
 czatClose.addEventListener("click", () => { czatWidget.hidden = true; });
 
+// Przeciąganie okna czatu za pasek nagłówka (zmiana rozmiaru obsługiwana
+// natywnie przez CSS "resize: both" na samym oknie - bez dodatkowego JS).
+(function initCzatDrag() {
+  const header = czatWidget.querySelector(".czat-widget-header");
+  let dragging = false;
+  let startX, startY, startLeft, startTop;
+
+  header.addEventListener("mousedown", (e) => {
+    if (e.target.closest("button")) return;
+    dragging = true;
+    const rect = czatWidget.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    czatWidget.style.bottom = "auto";
+    czatWidget.style.left = startLeft + "px";
+    czatWidget.style.top = startTop + "px";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+    newLeft = Math.max(0, Math.min(window.innerWidth - 60, newLeft));
+    newTop = Math.max(0, Math.min(window.innerHeight - 40, newTop));
+    czatWidget.style.left = newLeft + "px";
+    czatWidget.style.top = newTop + "px";
+  });
+
+  document.addEventListener("mouseup", () => { dragging = false; });
+})();
+
 zgloszeniaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const typ = document.getElementById("zgloszenie-typ").value;
