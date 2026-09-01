@@ -315,7 +315,7 @@ function renderTable() {
           ).join("")}
         </select>
       </td>
-      <td>${escapeHtml(lead.przypisane_do || "—")}</td>
+      <td>${lead.przypisane_do ? escapeHtml(nazwaDla(lead.przypisane_do)) : "—"}</td>
       <td class="cell-actions">
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-oznacz" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}" title="Oznacz jako klienta">Klient</button>
@@ -617,6 +617,33 @@ async function archiveClient(id, nazwa) {
 
 // -------------------- MODAL: DODAWANIE / EDYCJA --------------------
 
+function populatePrzypisaneSelect(currentValue) {
+  const select = document.getElementById("f-przypisane");
+  select.innerHTML = `<option value="">— brak —</option>`;
+
+  const emaile = Object.keys(profilesByEmail).sort((a, b) =>
+    nazwaDla(a).localeCompare(nazwaDla(b), "pl")
+  );
+
+  emaile.forEach((email) => {
+    const opt = document.createElement("option");
+    opt.value = email;
+    opt.textContent = nazwaDla(email);
+    select.appendChild(opt);
+  });
+
+  // Jeśli aktualna wartość (np. stary, ręcznie wpisany e-mail) nie jest
+  // znanym userem appki, dorzuć ją jako opcję, żeby nie zniknęła po zapisie.
+  if (currentValue && !profilesByEmail.hasOwnProperty(currentValue)) {
+    const opt = document.createElement("option");
+    opt.value = currentValue;
+    opt.textContent = `${currentValue} (nieznany użytkownik)`;
+    select.appendChild(opt);
+  }
+
+  select.value = currentValue || "";
+}
+
 function openModal(id = null) {
   leadForm.reset();
   document.getElementById("lead-id").value = "";
@@ -635,10 +662,11 @@ function openModal(id = null) {
     document.getElementById("f-www").value = lead.www || "";
     document.getElementById("f-osoba").value = lead.osoba_kontaktowa || "";
     document.getElementById("f-status").value = lead.status || "nowy";
-    document.getElementById("f-przypisane").value = lead.przypisane_do || "";
+    populatePrzypisaneSelect(lead.przypisane_do || "");
     document.getElementById("f-notatki").value = lead.notatki || "";
   } else {
     modalTitle.textContent = "Dodaj firmę";
+    populatePrzypisaneSelect("");
   }
 
   modal.hidden = false;
