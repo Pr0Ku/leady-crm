@@ -1273,6 +1273,8 @@ async function loadOnlineUsers() {
   if (!profilesInitiallyLoaded) {
     profilesInitiallyLoaded = true;
     render();
+    loadZgloszenia();
+    loadCzat();
   }
 }
 
