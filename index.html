@@ -28,12 +28,16 @@
     <form id="login-form">
       <label for="email-input">Adres e-mail</label>
       <input type="email" id="email-input" placeholder="ty@firma.pl" required autocomplete="email">
-      <button type="submit" id="login-btn">Wyślij link logowania</button>
+      <label for="password-input">Hasło</label>
+      <input type="password" id="password-input" required autocomplete="current-password">
+      <button type="submit" id="login-btn">Zaloguj się</button>
     </form>
+
+    <button type="button" id="forgot-password-btn" class="link-btn">Zapomniałeś hasła?</button>
 
     <div id="login-message" class="login-message" hidden></div>
 
-    <p class="login-note">Dostęp tylko dla zaproszonych osób. Link logowania ważny 60 minut, jednorazowego użytku.</p>
+    <p class="login-note">Dostęp tylko dla zaproszonych osób.</p>
   </div>
 </div>
 

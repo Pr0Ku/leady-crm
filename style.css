@@ -143,6 +143,21 @@ body {
   transition: background 0.15s;
 }
 
+.link-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--ink-soft, #9aa5b1);
+  font-size: 12.5px;
+  cursor: pointer;
+  margin-top: 12px;
+  font-family: var(--font-body);
+}
+
+.link-btn:hover { color: var(--amber); text-decoration: underline; }
+
 #login-btn:hover { background: var(--amber-dim); }
 #login-btn:disabled { opacity: 0.6; cursor: default; }
 

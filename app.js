@@ -116,23 +116,43 @@ function renderWwwCell(url) {
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email-input").value.trim();
+  const password = document.getElementById("password-input").value;
   loginBtn.disabled = true;
-  loginBtn.textContent = "Wysyłam…";
+  loginBtn.textContent = "Loguję…";
 
-  const { error } = await supabaseClient.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href },
-  });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   loginBtn.disabled = false;
-  loginBtn.textContent = "Wyślij link logowania";
+  loginBtn.textContent = "Zaloguj się";
+
+  if (error) {
+    loginMessage.hidden = false;
+    loginMessage.textContent = "Nie udało się zalogować: " + error.message;
+    loginMessage.classList.add("login-message-error");
+  } else {
+    loginMessage.hidden = true;
+  }
+});
+
+document.getElementById("forgot-password-btn").addEventListener("click", async () => {
+  const email = document.getElementById("email-input").value.trim();
+  if (!email) {
+    loginMessage.hidden = false;
+    loginMessage.textContent = "Najpierw wpisz swój adres e-mail powyżej.";
+    loginMessage.classList.add("login-message-error");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href,
+  });
 
   loginMessage.hidden = false;
   if (error) {
-    loginMessage.textContent = "Nie udało się wysłać linku: " + error.message;
+    loginMessage.textContent = "Nie udało się wysłać linku resetu: " + error.message;
     loginMessage.classList.add("login-message-error");
   } else {
-    loginMessage.textContent = "Sprawdź skrzynkę " + email + " i kliknij link logowania.";
+    loginMessage.textContent = "Jeśli ten adres jest zarejestrowany, wysłaliśmy link do zresetowania hasła.";
     loginMessage.classList.remove("login-message-error");
   }
 });
