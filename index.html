@@ -103,6 +103,7 @@
     <div class="tabs" id="view-tabs">
       <button type="button" class="tab-btn active" data-tab="leady">Leady</button>
       <button type="button" class="tab-btn" data-tab="klienci">Klienci</button>
+      <button type="button" class="tab-btn" data-tab="zgloszenia">Zgłoszenia <span id="zgl-tab-badge" class="tab-badge" hidden>0</span></button>
     </div>
 
     <div class="results-count" id="results-count"></div>
@@ -157,6 +158,58 @@
         </div>
       </div>
     </div>
+
+    <div id="view-zgloszenia" hidden>
+      <div class="zgl-toolbar">
+        <select id="zgl-filter-status">
+          <option value="">Wszystkie statusy</option>
+          <option value="otwarte">Otwarte</option>
+          <option value="zrobione">Zrobione</option>
+        </select>
+        <select id="zgl-filter-typ">
+          <option value="">Wszystkie typy</option>
+          <option value="blad">Błąd</option>
+          <option value="pomysl">Pomysł</option>
+          <option value="inne">Inne</option>
+        </select>
+        <select id="zgl-filter-autor" hidden></select>
+        <button type="button" id="zgl-new-btn" class="btn-primary">+ Nowe zgłoszenie</button>
+      </div>
+
+      <div id="zgl-new-form-wrap" class="zgl-new-form-wrap" hidden>
+        <form id="zgloszenia-form" class="zgl-new-form">
+          <select id="zgloszenie-typ">
+            <option value="blad">Błąd</option>
+            <option value="pomysl">Pomysł</option>
+            <option value="inne">Inne</option>
+          </select>
+          <textarea id="zgloszenie-tresc" rows="3" placeholder="Opisz co zauważyłeś / proponujesz…" required></textarea>
+          <div class="zgl-new-form-actions">
+            <button type="button" id="zgl-new-cancel" class="btn-ghost">Anuluj</button>
+            <button type="submit" class="btn-primary">Zgłoś</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="table-wrap">
+        <table id="zgloszenia-table">
+          <thead>
+            <tr>
+              <th>Typ</th>
+              <th>Treść</th>
+              <th>Autor</th>
+              <th>Data</th>
+              <th>Status</th>
+              <th class="cell-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="zgloszenia-tbody"></tbody>
+        </table>
+        <div id="zgloszenia-empty" class="empty-state" hidden>
+          <p>Brak zgłoszeń spełniających kryteria.</p>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -195,32 +248,6 @@
 </div>
 
 <div id="toast" class="toast" hidden></div>
-
-<button id="zgloszenia-toggle" class="zgloszenia-toggle" hidden>
-  <span>Zgłoszenia</span>
-  <span id="zgloszenia-badge" class="zgloszenia-badge" hidden>0</span>
-</button>
-
-<div id="zgloszenia-panel" class="zgloszenia-panel" hidden>
-  <div class="zgloszenia-panel-header">
-    <h2>Zgłoszenia</h2>
-    <button type="button" id="zgloszenia-close" class="btn-ghost">✕</button>
-  </div>
-
-  <form id="zgloszenia-form" class="zgloszenia-form">
-    <select id="zgloszenie-typ">
-      <option value="blad">Błąd</option>
-      <option value="pomysl">Pomysł</option>
-      <option value="inne">Inne</option>
-    </select>
-    <textarea id="zgloszenie-tresc" rows="3" placeholder="Opisz co zauważyłeś / proponujesz…" required></textarea>
-    <button type="submit" class="btn-primary">Zgłoś</button>
-  </form>
-
-  <div id="zgloszenia-list" class="zgloszenia-list">
-    <p class="zgloszenia-loading">Wczytuję zgłoszenia…</p>
-  </div>
-</div>
 
 <button id="czat-toggle" class="czat-toggle" hidden>
   Czat

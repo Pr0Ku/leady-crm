@@ -55,6 +55,7 @@ const csvInput = document.getElementById("csv-input");
 
 const viewLeady = document.getElementById("view-leady");
 const viewKlienci = document.getElementById("view-klienci");
+const viewZgloszenia = document.getElementById("view-zgloszenia");
 const klienciTbody = document.getElementById("klienci-tbody");
 const emptyStateKlienci = document.getElementById("empty-state-klienci");
 
@@ -67,12 +68,16 @@ const toast = document.getElementById("toast");
 const newVersionBanner = document.getElementById("new-version-banner");
 const newVersionRefreshBtn = document.getElementById("new-version-refresh");
 
-const zgloszeniaToggle = document.getElementById("zgloszenia-toggle");
-const zgloszeniaBadge = document.getElementById("zgloszenia-badge");
-const zgloszeniaPanel = document.getElementById("zgloszenia-panel");
-const zgloszeniaClose = document.getElementById("zgloszenia-close");
+const zglTabBadge = document.getElementById("zgl-tab-badge");
+const zglFilterStatus = document.getElementById("zgl-filter-status");
+const zglFilterTyp = document.getElementById("zgl-filter-typ");
+const zglFilterAutor = document.getElementById("zgl-filter-autor");
+const zglNewBtn = document.getElementById("zgl-new-btn");
+const zglNewFormWrap = document.getElementById("zgl-new-form-wrap");
+const zglNewCancel = document.getElementById("zgl-new-cancel");
 const zgloszeniaForm = document.getElementById("zgloszenia-form");
-const zgloszeniaList = document.getElementById("zgloszenia-list");
+const zgloszeniaTbody = document.getElementById("zgloszenia-tbody");
+const zgloszeniaEmpty = document.getElementById("zgloszenia-empty");
 
 const czatToggle = document.getElementById("czat-toggle");
 const czatBadge = document.getElementById("czat-badge");
@@ -176,8 +181,6 @@ function showLogin() {
   loginScreen.hidden = false;
   setPasswordScreen.hidden = true;
   appScreen.hidden = true;
-  zgloszeniaToggle.hidden = true;
-  zgloszeniaPanel.hidden = true;
   czatToggle.hidden = true;
   czatWidget.hidden = true;
   stopHeartbeat();
@@ -195,7 +198,6 @@ function showApp(session) {
   appScreen.hidden = false;
   userEmailEl.textContent = session.user.email;
   currentUserEmail = session.user.email;
-  zgloszeniaToggle.hidden = false;
   czatToggle.hidden = false;
   loadLeady();
   loadZgloszenia();
@@ -257,10 +259,12 @@ document.querySelectorAll("#view-tabs .tab-btn").forEach((btn) => {
     document.querySelectorAll("#view-tabs .tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
     viewLeady.hidden = currentTab !== "leady";
     viewKlienci.hidden = currentTab !== "klienci";
+    viewZgloszenia.hidden = currentTab !== "zgloszenia";
     statusFilter.hidden = currentTab !== "leady";
     fieldFilters.hidden = currentTab !== "leady";
     addLeadBtn.hidden = currentTab !== "leady";
     importCsvBtn.hidden = currentTab !== "leady";
+    resultsCount.hidden = currentTab === "zgloszenia";
     render();
   });
 });
@@ -268,8 +272,10 @@ document.querySelectorAll("#view-tabs .tab-btn").forEach((btn) => {
 function render() {
   if (currentTab === "leady") {
     renderTable();
-  } else {
+  } else if (currentTab === "klienci") {
     renderKlienciTable();
+  } else {
+    renderZgloszeniaTable();
   }
 }
 
@@ -1003,13 +1009,6 @@ function mapCsvRowToLead(row) {
   };
 }
 
-// -------------------- PANEL ZGŁOSZEŃ (prawa strona) --------------------
-
-zgloszeniaToggle.addEventListener("click", () => {
-  zgloszeniaPanel.hidden = !zgloszeniaPanel.hidden;
-});
-zgloszeniaClose.addEventListener("click", () => { zgloszeniaPanel.hidden = true; });
-
 // -------------------- CZAT (lewy dolny róg) --------------------
 
 czatToggle.addEventListener("click", () => {
@@ -1058,6 +1057,22 @@ czatClose.addEventListener("click", () => { czatWidget.hidden = true; });
   document.addEventListener("mouseup", () => { dragging = false; });
 })();
 
+// -------------------- ZAKŁADKA ZGŁOSZENIA --------------------
+
+let currentZgloszenia = [];
+
+zglNewBtn.addEventListener("click", () => {
+  zglNewFormWrap.hidden = !zglNewFormWrap.hidden;
+});
+zglNewCancel.addEventListener("click", () => {
+  zglNewFormWrap.hidden = true;
+  zgloszeniaForm.reset();
+});
+
+zglFilterStatus.addEventListener("change", renderZgloszeniaTable);
+zglFilterTyp.addEventListener("change", renderZgloszeniaTable);
+zglFilterAutor.addEventListener("change", renderZgloszeniaTable);
+
 zgloszeniaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const typ = document.getElementById("zgloszenie-typ").value;
@@ -1073,6 +1088,7 @@ zgloszeniaForm.addEventListener("submit", async (e) => {
     showToast("Nie udało się wysłać zgłoszenia: " + error.message, true);
   } else {
     trescInput.value = "";
+    zglNewFormWrap.hidden = true;
     showToast("Zgłoszenie wysłane, dzięki!");
     await loadZgloszenia();
   }
@@ -1085,48 +1101,85 @@ async function loadZgloszenia() {
     .order("utworzono_o", { ascending: false });
 
   if (error) {
-    zgloszeniaList.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania zgłoszeń.</p>`;
+    zgloszeniaTbody.innerHTML = "";
+    zgloszeniaEmpty.hidden = false;
+    zgloszeniaEmpty.querySelector("p").textContent = "Błąd wczytywania zgłoszeń.";
     return;
   }
 
-  const otwarte = (data || []).filter((z) => z.status === "otwarte").length;
-  zgloszeniaBadge.hidden = otwarte === 0;
-  zgloszeniaBadge.textContent = otwarte;
+  currentZgloszenia = data || [];
 
-  renderZgloszeniaList(data || []);
+  const otwarte = currentZgloszenia.filter((z) => z.status === "otwarte").length;
+  zglTabBadge.hidden = otwarte === 0;
+  zglTabBadge.textContent = otwarte;
+
+  // Filtr autora widoczny tylko dla admina (zwykly user i tak widzi
+  // wylacznie wlasne zgloszenia dzieki RLS, wiec filtr byłby bez sensu).
+  if (currentUserEmail === ADMIN_EMAIL) {
+    const obecnaWartosc = zglFilterAutor.value;
+    const autorzy = [...new Set(currentZgloszenia.map((z) => z.autor))]
+      .sort((a, b) => nazwaDla(a).localeCompare(nazwaDla(b), "pl"));
+    zglFilterAutor.innerHTML = `<option value="">Wszyscy autorzy</option>` +
+      autorzy.map((a) => `<option value="${escapeHtml(a)}">${escapeHtml(nazwaDla(a))}</option>`).join("");
+    zglFilterAutor.value = obecnaWartosc;
+    zglFilterAutor.hidden = false;
+  } else {
+    zglFilterAutor.hidden = true;
+  }
+
+  renderZgloszeniaTable();
 }
 
 const TYP_LABELS = { blad: "Błąd", pomysl: "Pomysł", inne: "Inne" };
 let komentarzeCache = {};
 
-function renderZgloszeniaList(zgloszenia) {
-  if (zgloszenia.length === 0) {
-    zgloszeniaList.innerHTML = `<p class="zgloszenia-loading">Brak zgłoszeń.</p>`;
-    return;
-  }
+function getFilteredZgloszenia() {
+  return currentZgloszenia.filter((z) => {
+    if (zglFilterStatus.value && z.status !== zglFilterStatus.value) return false;
+    if (zglFilterTyp.value && z.typ !== zglFilterTyp.value) return false;
+    if (!zglFilterAutor.hidden && zglFilterAutor.value && z.autor !== zglFilterAutor.value) return false;
+    return true;
+  });
+}
+
+function renderZgloszeniaTable() {
+  const filtered = getFilteredZgloszenia();
+  zgloszeniaEmpty.hidden = filtered.length !== 0;
+  zgloszeniaEmpty.querySelector("p").textContent = "Brak zgłoszeń spełniających kryteria.";
+  zgloszeniaTbody.innerHTML = "";
 
   const isAdmin = currentUserEmail === ADMIN_EMAIL;
 
-  zgloszeniaList.innerHTML = zgloszenia.map((z) => {
+  filtered.forEach((z) => {
     const mozeOznaczyc = isAdmin || z.autor === currentUserEmail;
-    const dataStr = new Date(z.utworzono_o).toLocaleString("pl-PL");
-    return `
-      <div class="zgloszenie-item zgloszenie-${z.status}">
-        <div class="zgloszenie-meta">
-          <span class="zgloszenie-typ">${TYP_LABELS[z.typ] || z.typ}</span>
-          <span>${escapeHtml(nazwaDla(z.autor))} · ${dataStr}</span>
-        </div>
-        <div class="zgloszenie-tresc">${escapeHtml(z.tresc)}</div>
-        <div class="zgloszenie-footer">
-          <span class="zgloszenie-status-label">${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</span>
-          <div class="zgloszenie-footer-actions">
-            <button type="button" class="zgloszenie-reply-toggle" data-id="${z.id}">Odpowiedz</button>
-            ${mozeOznaczyc && z.status === "otwarte"
-              ? `<button type="button" class="btn-ghost zgloszenie-done-btn" data-id="${z.id}">Oznacz jako zrobione</button>`
-              : ""}
-          </div>
-        </div>
-        <div class="zgloszenie-thread" id="zgloszenie-thread-${z.id}" hidden>
+    const dataStr = new Date(z.utworzono_o).toLocaleDateString("pl-PL");
+    const trescSkrocona = z.tresc.length > 70 ? z.tresc.slice(0, 70) + "…" : z.tresc;
+
+    const tr = document.createElement("tr");
+    tr.className = "row-main";
+    tr.innerHTML = `
+      <td class="cell-mono">${TYP_LABELS[z.typ] || z.typ}</td>
+      <td class="cell-nazwa cell-clickable" data-toggle="${z.id}" title="${escapeHtml(z.tresc)}">${escapeHtml(trescSkrocona)}</td>
+      <td>${escapeHtml(nazwaDla(z.autor))}</td>
+      <td>${dataStr}</td>
+      <td>${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</td>
+      <td class="cell-actions">
+        ${mozeOznaczyc && z.status === "otwarte"
+          ? `<button type="button" class="btn-edit zgloszenie-done-btn" data-id="${z.id}">Oznacz zrobione</button>`
+          : ""}
+      </td>
+    `;
+    zgloszeniaTbody.appendChild(tr);
+
+    const trDetails = document.createElement("tr");
+    trDetails.className = "row-details";
+    trDetails.hidden = true;
+    trDetails.dataset.detailsFor = z.id;
+    trDetails.innerHTML = `
+      <td colspan="6">
+        <div class="zgl-details-tresc">${escapeHtml(z.tresc)}</div>
+        <div class="notatki-section">
+          <span class="details-label">Odpowiedzi</span>
           <div class="zgloszenie-komentarze" id="zgloszenie-komentarze-${z.id}">
             <p class="zgloszenia-loading">Wczytuję…</p>
           </div>
@@ -1135,26 +1188,27 @@ function renderZgloszeniaList(zgloszenia) {
             <button type="submit" class="btn-primary">Wyślij</button>
           </form>
         </div>
-      </div>
+      </td>
     `;
-  }).join("");
-
-  zgloszeniaList.querySelectorAll(".zgloszenie-done-btn").forEach((btn) => {
-    btn.addEventListener("click", () => oznaczZgloszenieZrobione(btn.dataset.id));
+    zgloszeniaTbody.appendChild(trDetails);
   });
 
-  zgloszeniaList.querySelectorAll(".zgloszenie-reply-toggle").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const thread = document.getElementById(`zgloszenie-thread-${id}`);
-      thread.hidden = !thread.hidden;
-      if (!thread.hidden && !komentarzeCache[id]) {
-        await loadKomentarze(id);
+  zgloszeniaTbody.querySelectorAll(".cell-clickable").forEach((cell) => {
+    cell.addEventListener("click", async () => {
+      const details = zgloszeniaTbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
+      if (!details) return;
+      details.hidden = !details.hidden;
+      if (!details.hidden && !komentarzeCache[cell.dataset.toggle]) {
+        await loadKomentarze(cell.dataset.toggle);
       }
     });
   });
 
-  zgloszeniaList.querySelectorAll(".zgloszenie-komentarz-form").forEach((form) => {
+  zgloszeniaTbody.querySelectorAll(".zgloszenie-done-btn").forEach((btn) => {
+    btn.addEventListener("click", () => oznaczZgloszenieZrobione(btn.dataset.id));
+  });
+
+  zgloszeniaTbody.querySelectorAll(".zgloszenie-komentarz-form").forEach((form) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const textarea = form.querySelector("textarea");
