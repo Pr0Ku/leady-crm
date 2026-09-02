@@ -1060,6 +1060,8 @@ czatClose.addEventListener("click", () => { czatWidget.hidden = true; });
 // -------------------- ZAKŁADKA ZGŁOSZENIA --------------------
 
 let currentZgloszenia = [];
+let zglKomentarzeStats = {};
+let zglLastViewedMap = {};
 
 zglNewBtn.addEventListener("click", () => {
   zglNewFormWrap.hidden = !zglNewFormWrap.hidden;
@@ -1113,6 +1115,8 @@ async function loadZgloszenia() {
   zglTabBadge.hidden = otwarte === 0;
   zglTabBadge.textContent = otwarte;
 
+  await Promise.all([wczytajStatystykiKomentarzy(), wczytajOstatnioWidziane()]);
+
   // Filtr autora widoczny tylko dla admina (zwykly user i tak widzi
   // wylacznie wlasne zgloszenia dzieki RLS, wiec filtr byłby bez sensu).
   if (currentUserEmail === ADMIN_EMAIL) {
@@ -1128,6 +1132,51 @@ async function loadZgloszenia() {
   }
 
   renderZgloszeniaTable();
+}
+
+async function wczytajStatystykiKomentarzy() {
+  zglKomentarzeStats = {};
+  if (currentZgloszenia.length === 0) return;
+
+  const { data, error } = await supabaseClient
+    .from("zgloszenia_komentarze")
+    .select("zgloszenie_id, utworzono_o")
+    .in("zgloszenie_id", currentZgloszenia.map((z) => z.id));
+
+  if (error || !data) return;
+
+  data.forEach((k) => {
+    const s = zglKomentarzeStats[k.zgloszenie_id] || { liczba: 0, ostatnia: null };
+    s.liczba += 1;
+    if (!s.ostatnia || k.utworzono_o > s.ostatnia) s.ostatnia = k.utworzono_o;
+    zglKomentarzeStats[k.zgloszenie_id] = s;
+  });
+}
+
+async function wczytajOstatnioWidziane() {
+  zglLastViewedMap = {};
+  const { data, error } = await supabaseClient
+    .from("zgloszenia_przeczytane")
+    .select("zgloszenie_id, ostatnio_widziane_o")
+    .eq("user_email", currentUserEmail);
+
+  if (error || !data) return;
+  data.forEach((w) => { zglLastViewedMap[w.zgloszenie_id] = w.ostatnio_widziane_o; });
+}
+
+async function oznaczOdpowiedziPrzeczytane(zgloszenieId) {
+  const teraz = new Date().toISOString();
+  zglLastViewedMap[zgloszenieId] = teraz;
+
+  await supabaseClient
+    .from("zgloszenia_przeczytane")
+    .upsert({ zgloszenie_id: zgloszenieId, user_email: currentUserEmail, ostatnio_widziane_o: teraz },
+      { onConflict: "zgloszenie_id,user_email" });
+
+  // Zaktualizuj tylko wskaznik w tym jednym wierszu, zeby nie zwijac
+  // innych rozwinietych wierszy pelnym przerenderowaniem tabeli.
+  const komorka = zgloszeniaTbody.querySelector(`.zgl-odpowiedzi-cell[data-id="${zgloszenieId}"]`);
+  if (komorka) komorka.classList.remove("zgl-odpowiedzi-nowe");
 }
 
 const TYP_LABELS = { blad: "Błąd", pomysl: "Pomysł", inne: "Inne" };
@@ -1155,6 +1204,10 @@ function renderZgloszeniaTable() {
     const dataStr = new Date(z.utworzono_o).toLocaleDateString("pl-PL");
     const trescSkrocona = z.tresc.length > 70 ? z.tresc.slice(0, 70) + "…" : z.tresc;
 
+    const stats = zglKomentarzeStats[z.id] || { liczba: 0, ostatnia: null };
+    const ostatnioWidziane = zglLastViewedMap[z.id];
+    const maNowe = stats.ostatnia && (!ostatnioWidziane || stats.ostatnia > ostatnioWidziane);
+
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
@@ -1162,7 +1215,11 @@ function renderZgloszeniaTable() {
       <td class="cell-nazwa cell-clickable" data-toggle="${z.id}" title="${escapeHtml(z.tresc)}">${escapeHtml(trescSkrocona)}</td>
       <td>${escapeHtml(nazwaDla(z.autor))}</td>
       <td>${dataStr}</td>
-      <td>${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</td>
+      <td class="zgl-odpowiedzi-cell ${maNowe ? "zgl-odpowiedzi-nowe" : ""}" data-id="${z.id}">
+        ${stats.liczba > 0 ? `💬 ${stats.liczba}` : "—"}
+        ${maNowe ? `<span class="zgl-nowe-dot"></span>` : ""}
+      </td>
+      <td><span class="zgl-status-pill zgl-status-${z.status}">${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</span></td>
       <td class="cell-actions">
         ${mozeOznaczyc && z.status === "otwarte"
           ? `<button type="button" class="btn-edit zgloszenie-done-btn" data-id="${z.id}">Oznacz zrobione</button>`
@@ -1176,7 +1233,7 @@ function renderZgloszeniaTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = z.id;
     trDetails.innerHTML = `
-      <td colspan="6">
+      <td colspan="7">
         <div class="zgl-details-tresc">${escapeHtml(z.tresc)}</div>
         <div class="notatki-section">
           <span class="details-label">Odpowiedzi</span>
@@ -1198,8 +1255,11 @@ function renderZgloszeniaTable() {
       const details = zgloszeniaTbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
       if (!details) return;
       details.hidden = !details.hidden;
-      if (!details.hidden && !komentarzeCache[cell.dataset.toggle]) {
-        await loadKomentarze(cell.dataset.toggle);
+      if (!details.hidden) {
+        if (!komentarzeCache[cell.dataset.toggle]) {
+          await loadKomentarze(cell.dataset.toggle);
+        }
+        await oznaczOdpowiedziPrzeczytane(cell.dataset.toggle);
       }
     });
   });
@@ -1265,6 +1325,22 @@ async function dodajKomentarz(zgloszenieId, tresc) {
     showToast("Nie udało się wysłać odpowiedzi: " + error.message, true);
   } else {
     await loadKomentarze(zgloszenieId);
+
+    const teraz = new Date().toISOString();
+    const s = zglKomentarzeStats[zgloszenieId] || { liczba: 0, ostatnia: null };
+    s.liczba += 1;
+    s.ostatnia = teraz;
+    zglKomentarzeStats[zgloszenieId] = s;
+
+    // Sam napisałeś odpowiedź, wiec od razu liczy się jako przeczytana
+    // (nie ma sensu podswietlac ci wlasnego komentarza jako "nowy").
+    await oznaczOdpowiedziPrzeczytane(zgloszenieId);
+
+    const komorka = zgloszeniaTbody.querySelector(`.zgl-odpowiedzi-cell[data-id="${zgloszenieId}"]`);
+    if (komorka) {
+      komorka.innerHTML = `💬 ${s.liczba}`;
+      komorka.classList.remove("zgl-odpowiedzi-nowe");
+    }
   }
 }
 
