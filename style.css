@@ -280,9 +280,15 @@ body {
 
 .tabs {
   display: flex;
-  gap: 24px;
+  justify-content: space-between;
+  align-items: flex-end;
   border-bottom: 1px solid var(--paper-dim);
   margin-bottom: 20px;
+}
+
+.tabs-group {
+  display: flex;
+  gap: 24px;
 }
 
 .tab-btn {
