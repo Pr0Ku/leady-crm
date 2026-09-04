@@ -944,6 +944,9 @@ tbody tr:hover .cell-actions { background: #fbfaf7; }
   font-size: 12.5px;
 }
 
+.zgloszenie-komentarz-wlasny { background: #fff8ea; border-color: var(--amber); }
+.zgloszenie-komentarz-cudzy { background: #eaf2fb; border-color: #a9c6e8; }
+
 .zgloszenie-komentarz-meta {
   font-size: 10.5px;
   color: var(--ink-soft);

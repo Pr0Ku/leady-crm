@@ -1306,7 +1306,7 @@ function renderKomentarze(zgloszenieId) {
   }
 
   container.innerHTML = komentarze.map((k) => `
-    <div class="zgloszenie-komentarz">
+    <div class="zgloszenie-komentarz ${k.autor === currentUserEmail ? "zgloszenie-komentarz-wlasny" : "zgloszenie-komentarz-cudzy"}">
       <div class="zgloszenie-komentarz-meta">${escapeHtml(nazwaDla(k.autor))} · ${new Date(k.utworzono_o).toLocaleString("pl-PL")}</div>
       <div>${escapeHtml(k.tresc)}</div>
     </div>
