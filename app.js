@@ -598,6 +598,7 @@ function renderTable() {
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
+      <td class="cell-open"><a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td class="cell-mono">${lead.wielkosc_floty != null ? lead.wielkosc_floty : "—"}</td>
@@ -610,7 +611,6 @@ function renderTable() {
       </td>
       <td>${lead.przypisane_do ? escapeHtml(nazwaDla(lead.przypisane_do)) : "—"}</td>
       <td class="cell-actions">
-        <a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-oznacz" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}" title="Oznacz jako klienta">Klient</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button>
@@ -623,7 +623,7 @@ function renderTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = lead.id;
     trDetails.innerHTML = `
-      <td colspan="6">
+      <td colspan="7">
         <div class="details-grid">
           <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>

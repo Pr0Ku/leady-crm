@@ -614,12 +614,13 @@ tbody tr:hover { background: #fbfaf7; }
 
 thead th.cell-actions { background: white; z-index: 3; }
 
-#leady-table thead th:nth-child(1) { width: 24%; }
-#leady-table thead th:nth-child(2) { width: 14%; }
-#leady-table thead th:nth-child(3) { width: 8%; }
-#leady-table thead th:nth-child(4) { width: 18%; }
-#leady-table thead th:nth-child(5) { width: 18%; }
-#leady-table thead th.cell-actions { width: 270px; }
+#leady-table thead th.cell-open { width: 44px; }
+#leady-table thead th:nth-child(2) { width: 23%; }
+#leady-table thead th:nth-child(3) { width: 13%; }
+#leady-table thead th:nth-child(4) { width: 8%; }
+#leady-table thead th:nth-child(5) { width: 17%; }
+#leady-table thead th:nth-child(6) { width: 17%; }
+#leady-table thead th.cell-actions { width: 210px; }
 
 #klienci-table thead th:nth-child(1) { width: 11%; }
 #klienci-table thead th.cell-open { width: 44px; }
