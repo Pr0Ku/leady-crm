@@ -389,19 +389,10 @@ body {
 .zgl-status-otwarte { background: #fff1de; color: #a8621a; }
 .zgl-status-zrobione { background: #e6f4e6; color: #2f7a2f; }
 
-.zgl-odpowiedzi-cell { position: relative; }
-
-.zgl-odpowiedzi-nowe { font-weight: 700; }
-
-.zgl-nowe-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red, #b8503f);
-  margin-left: 5px;
-  vertical-align: middle;
-}
+.zgl-row-nowa { background: #fff8ea; }
+.zgl-row-nowa:hover { background: #fff3d9; }
+.zgl-row-nowa td { font-weight: 600; }
+.zgl-row-nowa .zgl-status-pill { font-weight: 600; }
 
 .btn-primary, .btn-ghost, .btn-edit {
   font-family: var(--font-body);
@@ -575,12 +566,11 @@ thead th.cell-actions { background: white; z-index: 3; }
 #klienci-table thead th:nth-child(5) { width: 15%; }
 #klienci-table thead th.cell-actions { width: 170px; }
 
-#zgloszenia-table thead th:nth-child(1) { width: 8%; }
-#zgloszenia-table thead th:nth-child(2) { width: 34%; }
-#zgloszenia-table thead th:nth-child(3) { width: 16%; }
-#zgloszenia-table thead th:nth-child(4) { width: 10%; }
+#zgloszenia-table thead th:nth-child(1) { width: 9%; }
+#zgloszenia-table thead th:nth-child(2) { width: 42%; }
+#zgloszenia-table thead th:nth-child(3) { width: 18%; }
+#zgloszenia-table thead th:nth-child(4) { width: 12%; }
 #zgloszenia-table thead th:nth-child(5) { width: 12%; }
-#zgloszenia-table thead th:nth-child(6) { width: 10%; }
 #zgloszenia-table thead th.cell-actions { width: 160px; }
 
 tbody tr:hover .cell-actions { background: #fbfaf7; }

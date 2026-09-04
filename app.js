@@ -1173,10 +1173,10 @@ async function oznaczOdpowiedziPrzeczytane(zgloszenieId) {
     .upsert({ zgloszenie_id: zgloszenieId, user_email: currentUserEmail, ostatnio_widziane_o: teraz },
       { onConflict: "zgloszenie_id,user_email" });
 
-  // Zaktualizuj tylko wskaznik w tym jednym wierszu, zeby nie zwijac
-  // innych rozwinietych wierszy pelnym przerenderowaniem tabeli.
-  const komorka = zgloszeniaTbody.querySelector(`.zgl-odpowiedzi-cell[data-id="${zgloszenieId}"]`);
-  if (komorka) komorka.classList.remove("zgl-odpowiedzi-nowe");
+  // Zdejmij podswietlenie z calego wiersza, zeby nie zwijac innych
+  // rozwinietych wierszy pelnym przerenderowaniem tabeli.
+  const wiersz = zgloszeniaTbody.querySelector(`tr.row-main[data-row-id="${zgloszenieId}"]`);
+  if (wiersz) wiersz.classList.remove("zgl-row-nowa");
 }
 
 const TYP_LABELS = { blad: "Błąd", pomysl: "Pomysł", inne: "Inne" };
@@ -1209,16 +1209,13 @@ function renderZgloszeniaTable() {
     const maNowe = stats.ostatnia && (!ostatnioWidziane || stats.ostatnia > ostatnioWidziane);
 
     const tr = document.createElement("tr");
-    tr.className = "row-main";
+    tr.className = "row-main" + (maNowe ? " zgl-row-nowa" : "");
+    tr.dataset.rowId = z.id;
     tr.innerHTML = `
       <td class="cell-mono">${TYP_LABELS[z.typ] || z.typ}</td>
       <td class="cell-nazwa cell-clickable" data-toggle="${z.id}" title="${escapeHtml(z.tresc)}">${escapeHtml(trescSkrocona)}</td>
       <td>${escapeHtml(nazwaDla(z.autor))}</td>
       <td>${dataStr}</td>
-      <td class="zgl-odpowiedzi-cell ${maNowe ? "zgl-odpowiedzi-nowe" : ""}" data-id="${z.id}">
-        ${stats.liczba > 0 ? `💬 ${stats.liczba}` : "—"}
-        ${maNowe ? `<span class="zgl-nowe-dot"></span>` : ""}
-      </td>
       <td><span class="zgl-status-pill zgl-status-${z.status}">${z.status === "zrobione" ? "✓ Zrobione" : "Otwarte"}</span></td>
       <td class="cell-actions">
         ${mozeOznaczyc && z.status === "otwarte"
@@ -1233,7 +1230,7 @@ function renderZgloszeniaTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = z.id;
     trDetails.innerHTML = `
-      <td colspan="7">
+      <td colspan="6">
         <div class="zgl-details-tresc">${escapeHtml(z.tresc)}</div>
         <div class="notatki-section">
           <span class="details-label">Odpowiedzi</span>
@@ -1335,12 +1332,6 @@ async function dodajKomentarz(zgloszenieId, tresc) {
     // Sam napisałeś odpowiedź, wiec od razu liczy się jako przeczytana
     // (nie ma sensu podswietlac ci wlasnego komentarza jako "nowy").
     await oznaczOdpowiedziPrzeczytane(zgloszenieId);
-
-    const komorka = zgloszeniaTbody.querySelector(`.zgl-odpowiedzi-cell[data-id="${zgloszenieId}"]`);
-    if (komorka) {
-      komorka.innerHTML = `💬 ${s.liczba}`;
-      komorka.classList.remove("zgl-odpowiedzi-nowe");
-    }
   }
 }
 
