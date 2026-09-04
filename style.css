@@ -621,12 +621,16 @@ thead th.cell-actions { background: white; z-index: 3; }
 #leady-table thead th:nth-child(5) { width: 18%; }
 #leady-table thead th.cell-actions { width: 270px; }
 
-#klienci-table thead th:nth-child(1) { width: 12%; }
-#klienci-table thead th:nth-child(2) { width: 24%; }
-#klienci-table thead th:nth-child(3) { width: 16%; }
+#klienci-table thead th:nth-child(1) { width: 11%; }
+#klienci-table thead th.cell-open { width: 44px; }
+#klienci-table thead th:nth-child(3) { width: 22%; }
 #klienci-table thead th:nth-child(4) { width: 15%; }
-#klienci-table thead th:nth-child(5) { width: 15%; }
-#klienci-table thead th.cell-actions { width: 200px; }
+#klienci-table thead th:nth-child(5) { width: 14%; }
+#klienci-table thead th:nth-child(6) { width: 14%; }
+#klienci-table thead th.cell-actions { width: 170px; }
+
+.cell-open { text-align: center; padding-left: 6px !important; padding-right: 6px !important; }
+.cell-open .btn-open-link { padding: 4px 6px; }
 
 #zgloszenia-table thead th:nth-child(1) { width: 9%; }
 #zgloszenia-table thead th:nth-child(2) { width: 42%; }

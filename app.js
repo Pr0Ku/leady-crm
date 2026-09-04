@@ -751,12 +751,12 @@ function renderKlienciTable() {
     tr.className = "row-main";
     tr.innerHTML = `
       <td class="cell-mono cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.numer_klienta || "—")}</td>
+      <td class="cell-open"><a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
       <td>${lead.data_konca_kontraktu ? new Date(lead.data_konca_kontraktu).toLocaleDateString("pl-PL") : "—"}</td>
       <td class="cell-actions">
-        <a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Archiwizuj</button>
       </td>
@@ -768,7 +768,7 @@ function renderKlienciTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = lead.id;
     trDetails.innerHTML = `
-      <td colspan="6">
+      <td colspan="7">
         <div class="details-grid">
           <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
