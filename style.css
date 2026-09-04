@@ -163,6 +163,39 @@ body {
 
 .link-btn:hover { color: var(--amber); text-decoration: underline; }
 
+.detail-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detail-badge-lead { background: var(--navy-700); color: var(--paper); }
+.detail-badge-klient { background: var(--amber); color: var(--navy-950); }
+
+.detail-main { max-width: 760px; }
+
+.detail-title { font-size: 26px; margin: 0 0 4px; font-family: var(--font-display); }
+
+.detail-subtitle { color: var(--ink-soft); margin: 0 0 24px; font-size: 14px; }
+
+.detail-fields-grid {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--paper-dim);
+}
+
+.detail-section { margin-bottom: 32px; }
+
+.detail-section h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+}
+
+.detail-placeholder { opacity: 0.6; }
+
 #login-btn:hover { background: var(--amber-dim); }
 #login-btn:disabled { opacity: 0.6; cursor: default; }
 
@@ -421,6 +454,7 @@ body {
   color: var(--ink-soft);
   padding: 6px 10px;
   font-weight: 500;
+  text-decoration: none;
 }
 .btn-edit:hover { color: var(--ink); text-decoration: underline; }
 
@@ -557,14 +591,14 @@ thead th.cell-actions { background: white; z-index: 3; }
 #leady-table thead th:nth-child(3) { width: 8%; }
 #leady-table thead th:nth-child(4) { width: 18%; }
 #leady-table thead th:nth-child(5) { width: 18%; }
-#leady-table thead th.cell-actions { width: 240px; }
+#leady-table thead th.cell-actions { width: 270px; }
 
 #klienci-table thead th:nth-child(1) { width: 12%; }
 #klienci-table thead th:nth-child(2) { width: 24%; }
 #klienci-table thead th:nth-child(3) { width: 16%; }
 #klienci-table thead th:nth-child(4) { width: 15%; }
 #klienci-table thead th:nth-child(5) { width: 15%; }
-#klienci-table thead th.cell-actions { width: 170px; }
+#klienci-table thead th.cell-actions { width: 200px; }
 
 #zgloszenia-table thead th:nth-child(1) { width: 9%; }
 #zgloszenia-table thead th:nth-child(2) { width: 42%; }

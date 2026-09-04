@@ -215,6 +215,38 @@
   </main>
 </div>
 
+<!-- EKRAN SZCZEGÓŁÓW POJEDYNCZEGO REKORDU (otwierany w nowej karcie) -->
+<div id="detail-screen" class="screen" hidden>
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-name">LEADY</span>
+    </div>
+    <span id="detail-badge" class="detail-badge"></span>
+  </div>
+
+  <main class="main detail-main">
+    <h1 id="detail-nazwa" class="detail-title"></h1>
+    <p id="detail-lokalizacja" class="detail-subtitle"></p>
+
+    <div id="detail-fields" class="details-grid detail-fields-grid"></div>
+
+    <div class="detail-section">
+      <h2>Notatki</h2>
+      <div id="detail-notatki-thread" class="notatki-thread"></div>
+      <form id="detail-notatka-form" class="notatka-form">
+        <textarea rows="2" placeholder="Dodaj notatkę…" required></textarea>
+        <button type="submit" class="btn-primary">Dodaj</button>
+      </form>
+    </div>
+
+    <div class="detail-section detail-placeholder">
+      <h2>Dziennik połączeń</h2>
+      <p class="zgloszenia-loading">Wkrótce — na razie korzystaj z notatek powyżej.</p>
+    </div>
+  </main>
+</div>
+
 <!-- MODAL: dodawanie / edycja firmy -->
 <div id="lead-modal" class="modal-overlay" hidden>
   <div class="modal">

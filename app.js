@@ -28,6 +28,7 @@ function nazwaDla(email) {
 const loginScreen = document.getElementById("login-screen");
 const setPasswordScreen = document.getElementById("set-password-screen");
 const appScreen = document.getElementById("app-screen");
+const detailScreen = document.getElementById("detail-screen");
 const loginForm = document.getElementById("login-form");
 const loginMessage = document.getElementById("login-message");
 const loginBtn = document.getElementById("login-btn");
@@ -171,16 +172,26 @@ logoutBtn.addEventListener("click", async () => {
 async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    showApp(session);
+    const rekordId = getRekordIdFromUrl();
+    if (rekordId) {
+      showDetailScreen(session, rekordId);
+    } else {
+      showApp(session);
+    }
   } else {
     showLogin();
   }
+}
+
+function getRekordIdFromUrl() {
+  return new URLSearchParams(window.location.search).get("rekord");
 }
 
 function showLogin() {
   loginScreen.hidden = false;
   setPasswordScreen.hidden = true;
   appScreen.hidden = true;
+  detailScreen.hidden = true;
   czatToggle.hidden = true;
   czatWidget.hidden = true;
   stopHeartbeat();
@@ -190,12 +201,14 @@ function showSetPasswordScreen() {
   loginScreen.hidden = true;
   setPasswordScreen.hidden = false;
   appScreen.hidden = true;
+  detailScreen.hidden = true;
 }
 
 function showApp(session) {
   loginScreen.hidden = true;
   setPasswordScreen.hidden = true;
   appScreen.hidden = false;
+  detailScreen.hidden = true;
   userEmailEl.textContent = session.user.email;
   currentUserEmail = session.user.email;
   czatToggle.hidden = false;
@@ -213,12 +226,122 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // resetu widoczny), nie przeskakuj od razu do appki - poczekaj az
     // zapisze nowe haslo.
     if (setPasswordScreen.hidden) {
-      showApp(session);
+      const rekordId = getRekordIdFromUrl();
+      if (rekordId) {
+        showDetailScreen(session, rekordId);
+      } else {
+        showApp(session);
+      }
     }
   } else if (event === "SIGNED_OUT") {
     showLogin();
   }
 });
+
+// -------------------- EKRAN SZCZEGÓŁÓW (nowa karta, 1 rekord) --------------------
+
+async function showDetailScreen(session, rekordId) {
+  loginScreen.hidden = true;
+  setPasswordScreen.hidden = true;
+  appScreen.hidden = true;
+  detailScreen.hidden = false;
+  currentUserEmail = session.user.email;
+
+  const { data: rekord, error } = await supabaseClient
+    .from("leady")
+    .select("*")
+    .eq("id", rekordId)
+    .single();
+
+  if (error || !rekord) {
+    document.getElementById("detail-nazwa").textContent = "Nie znaleziono rekordu.";
+    return;
+  }
+
+  const jestKlientem = !!rekord.numer_klienta;
+
+  document.title = `${rekord.nazwa_firmy} — Leady`;
+  document.getElementById("detail-nazwa").textContent = rekord.nazwa_firmy;
+  document.getElementById("detail-lokalizacja").textContent = rekord.lokalizacja || "";
+
+  const badge = document.getElementById("detail-badge");
+  badge.textContent = jestKlientem ? `Klient ${rekord.numer_klienta}` : "Lead";
+  badge.className = "detail-badge " + (jestKlientem ? "detail-badge-klient" : "detail-badge-lead");
+
+  const pola = [
+    ["NIP", rekord.nip],
+    ["Telefon", rekord.telefon],
+    ["E-mail", rekord.email],
+    ["Strona www", rekord.www ? renderWwwCell(rekord.www) : null],
+    ["Osoba kontaktowa", rekord.osoba_kontaktowa],
+    ["Wielkość floty", rekord.wielkosc_floty != null ? rekord.wielkosc_floty : null],
+  ];
+
+  if (jestKlientem) {
+    pola.push(
+      ["Klientem od", rekord.klientem_od ? new Date(rekord.klientem_od).toLocaleDateString("pl-PL") : null],
+      ["Data końca kontraktu", rekord.data_konca_kontraktu ? new Date(rekord.data_konca_kontraktu).toLocaleDateString("pl-PL") : null]
+    );
+  } else {
+    pola.push(
+      ["Status", STATUS_LABELS[rekord.status] || rekord.status],
+      ["Przypisane do", rekord.przypisane_do ? nazwaDla(rekord.przypisane_do) : null],
+      ["Termin kolejnego kontaktu", rekord.termin_kontaktu ? new Date(rekord.termin_kontaktu).toLocaleDateString("pl-PL") : null]
+    );
+  }
+
+  document.getElementById("detail-fields").innerHTML = pola.map(([etykieta, wartosc]) => `
+    <div><span class="details-label">${etykieta}</span><div>${wartosc != null && wartosc !== "" ? wartosc : "—"}</div></div>
+  `).join("");
+
+  const tabelaNotatek = jestKlientem ? "notatki_klienta" : "notatki_leada";
+  await loadDetailNotatki(rekordId, tabelaNotatek);
+
+  document.getElementById("detail-notatka-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const textarea = e.target.querySelector("textarea");
+    const tresc = textarea.value.trim();
+    if (!tresc) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { error: insertError } = await supabaseClient
+      .from(tabelaNotatek)
+      .insert({ lead_id: rekordId, autor: user.email, tresc });
+
+    if (insertError) {
+      showToast("Nie udało się dodać notatki: " + insertError.message, true);
+    } else {
+      textarea.value = "";
+      await loadDetailNotatki(rekordId, tabelaNotatek);
+    }
+  });
+}
+
+async function loadDetailNotatki(rekordId, tabelaNotatek) {
+  const container = document.getElementById("detail-notatki-thread");
+  const { data, error } = await supabaseClient
+    .from(tabelaNotatek)
+    .select("*")
+    .eq("lead_id", rekordId)
+    .order("utworzono_o", { ascending: true });
+
+  if (error) {
+    container.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania notatek.</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p class="zgloszenia-loading">Brak notatek.</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map((n) => `
+    <div class="notatka-item">
+      <div class="notatka-meta">${escapeHtml(nazwaDla(n.autor) || "—")} · ${new Date(n.utworzono_o).toLocaleString("pl-PL")}</div>
+      <div>${escapeHtml(n.tresc)}</div>
+    </div>
+  `).join("");
+}
 
 document.getElementById("set-password-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -416,6 +539,7 @@ function renderTable() {
       </td>
       <td>${lead.przypisane_do ? escapeHtml(nazwaDla(lead.przypisane_do)) : "—"}</td>
       <td class="cell-actions">
+        <a href="?rekord=${lead.id}" target="_blank" class="btn-edit" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-oznacz" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}" title="Oznacz jako klienta">Klient</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button>
@@ -554,6 +678,7 @@ function renderKlienciTable() {
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
       <td>${lead.data_konca_kontraktu ? new Date(lead.data_konca_kontraktu).toLocaleDateString("pl-PL") : "—"}</td>
       <td class="cell-actions">
+        <a href="?rekord=${lead.id}" target="_blank" class="btn-edit" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Archiwizuj</button>
       </td>
