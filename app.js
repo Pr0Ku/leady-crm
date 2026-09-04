@@ -315,6 +315,66 @@ async function showDetailScreen(session, rekordId) {
       await loadDetailNotatki(rekordId, tabelaNotatek);
     }
   });
+
+  await loadDetailPolaczenia(rekordId);
+
+  document.getElementById("detail-polaczenie-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const wynik = document.getElementById("detail-polaczenie-wynik").value;
+    const komentarzInput = document.getElementById("detail-polaczenie-komentarz");
+    const komentarz = komentarzInput.value.trim();
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { error: insertError } = await supabaseClient
+      .from("dziennik_polaczen")
+      .insert({ lead_id: rekordId, autor: user.email, wynik, komentarz: komentarz || null });
+
+    if (insertError) {
+      showToast("Nie udało się zapisać połączenia: " + insertError.message, true);
+    } else {
+      komentarzInput.value = "";
+      showToast("Połączenie zapisane.");
+      await loadDetailPolaczenia(rekordId);
+    }
+  });
+}
+
+const WYNIK_LABELS = {
+  brak_odbioru: "Brak odbioru",
+  zainteresowany: "Rozmowa — zainteresowany",
+  niezainteresowany: "Rozmowa — niezainteresowany",
+  oddzwonic: "Oddzwonić później",
+  zly_numer: "Zły / nieaktualny numer",
+  inne: "Inne",
+};
+
+async function loadDetailPolaczenia(rekordId) {
+  const container = document.getElementById("detail-polaczenia-list");
+  const { data, error } = await supabaseClient
+    .from("dziennik_polaczen")
+    .select("*")
+    .eq("lead_id", rekordId)
+    .order("utworzono_o", { ascending: false });
+
+  if (error) {
+    container.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania dziennika połączeń.</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p class="zgloszenia-loading">Brak zapisanych połączeń.</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map((p) => `
+    <div class="notatka-item">
+      <div class="notatka-meta">
+        <span class="polaczenie-wynik-pill">${WYNIK_LABELS[p.wynik] || p.wynik}</span>
+        · ${escapeHtml(nazwaDla(p.autor) || "—")} · ${new Date(p.utworzono_o).toLocaleString("pl-PL")}
+      </div>
+      ${p.komentarz ? `<div>${escapeHtml(p.komentarz)}</div>` : ""}
+    </div>
+  `).join("");
 }
 
 async function loadDetailNotatki(rekordId, tabelaNotatek) {

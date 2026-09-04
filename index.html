@@ -240,9 +240,21 @@
       </form>
     </div>
 
-    <div class="detail-section detail-placeholder">
+    <div class="detail-section">
       <h2>Dziennik połączeń</h2>
-      <p class="zgloszenia-loading">Wkrótce — na razie korzystaj z notatek powyżej.</p>
+      <div id="detail-polaczenia-list" class="notatki-thread"></div>
+      <form id="detail-polaczenie-form" class="polaczenie-form">
+        <select id="detail-polaczenie-wynik">
+          <option value="brak_odbioru">Brak odbioru</option>
+          <option value="zainteresowany">Rozmowa — zainteresowany</option>
+          <option value="niezainteresowany">Rozmowa — niezainteresowany</option>
+          <option value="oddzwonic">Oddzwonić później</option>
+          <option value="zly_numer">Zły / nieaktualny numer</option>
+          <option value="inne">Inne</option>
+        </select>
+        <textarea id="detail-polaczenie-komentarz" rows="2" placeholder="Krótki komentarz (opcjonalnie)…"></textarea>
+        <button type="submit" class="btn-primary">Zapisz połączenie</button>
+      </form>
     </div>
   </main>
 </div>
