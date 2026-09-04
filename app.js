@@ -24,6 +24,18 @@ function nazwaDla(email) {
   return (profilesByEmail[email] && profilesByEmail[email].trim()) || email;
 }
 
+function otworzWOknie(url) {
+  const szerokosc = 1000;
+  const wysokosc = 850;
+  const lewo = window.screenX + (window.outerWidth - szerokosc) / 2;
+  const gora = window.screenY + (window.outerHeight - wysokosc) / 2;
+  window.open(
+    url,
+    "_blank",
+    `width=${szerokosc},height=${wysokosc},left=${lewo},top=${gora},resizable=yes,scrollbars=yes`
+  );
+}
+
 // -------------------- ELEMENTY DOM --------------------
 const loginScreen = document.getElementById("login-screen");
 const setPasswordScreen = document.getElementById("set-password-screen");
@@ -97,8 +109,7 @@ function showToast(msg, isError = false) {
   setTimeout(() => { toast.hidden = true; }, 3500);
 }
 
-function escapeHtml(str) {
-  if (!str) return "";
+function escapeHtml(str) {  if (!str) return "";
   return str.replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
@@ -678,6 +689,13 @@ function renderTable() {
     btn.addEventListener("click", () => openModal(btn.dataset.id));
   });
 
+  tbody.querySelectorAll(".btn-open-link").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      otworzWOknie(a.href);
+    });
+  });
+
   tbody.querySelectorAll(".btn-delete").forEach((btn) => {
     btn.addEventListener("click", () => softDeleteLead(btn.dataset.id, btn.dataset.nazwa));
   });
@@ -790,6 +808,13 @@ function renderKlienciTable() {
 
   klienciTbody.querySelectorAll(".btn-edit").forEach((btn) => {
     btn.addEventListener("click", () => openModal(btn.dataset.id));
+  });
+
+  klienciTbody.querySelectorAll(".btn-open-link").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      otworzWOknie(a.href);
+    });
   });
 
   klienciTbody.querySelectorAll(".btn-delete").forEach((btn) => {
