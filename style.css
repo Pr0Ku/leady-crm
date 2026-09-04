@@ -449,14 +449,16 @@ body {
 
 .topbar .btn-ghost { border-color: var(--navy-700); color: var(--paper); }
 
-.btn-edit {
+.btn-edit,
+.btn-open-link {
   background: transparent;
   color: var(--ink-soft);
   padding: 6px 10px;
   font-weight: 500;
   text-decoration: none;
 }
-.btn-edit:hover { color: var(--ink); text-decoration: underline; }
+.btn-edit:hover,
+.btn-open-link:hover { color: var(--ink); text-decoration: underline; }
 
 .btn-delete {
   background: transparent;

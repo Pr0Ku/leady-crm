@@ -539,7 +539,7 @@ function renderTable() {
       </td>
       <td>${lead.przypisane_do ? escapeHtml(nazwaDla(lead.przypisane_do)) : "—"}</td>
       <td class="cell-actions">
-        <a href="?rekord=${lead.id}" target="_blank" class="btn-edit" title="Otwórz w nowej karcie">↗</a>
+        <a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-oznacz" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}" title="Oznacz jako klienta">Klient</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Usuń</button>
@@ -678,7 +678,7 @@ function renderKlienciTable() {
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
       <td>${lead.data_konca_kontraktu ? new Date(lead.data_konca_kontraktu).toLocaleDateString("pl-PL") : "—"}</td>
       <td class="cell-actions">
-        <a href="?rekord=${lead.id}" target="_blank" class="btn-edit" title="Otwórz w nowej karcie">↗</a>
+        <a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowej karcie">↗</a>
         <button class="btn-edit" data-id="${lead.id}">Edytuj</button>
         <button class="btn-delete" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Archiwizuj</button>
       </td>
