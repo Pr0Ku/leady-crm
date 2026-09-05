@@ -2046,3 +2046,19 @@ async function initVersionCheck() {
 }
 
 newVersionRefreshBtn.addEventListener("click", () => location.reload());
+
+// -------------------- OSTRZEŻENIE PRZEGLĄDARKI O NIEZAPISANYCH DANYCH --------------------
+//
+// Sama obecność tego listenera dodatkowo zniechęca przeglądarkę (np. Chrome
+// "Memory Saver") do wyładowania tej karty z pamięci w tle, gdy user ma coś
+// niezapisanego wpisane w dowolnym polu tekstowym (notatka, odpowiedź itp.).
+
+window.addEventListener("beforeunload", (e) => {
+  const maNiezapisanaTresc = Array.from(document.querySelectorAll("textarea"))
+    .some((pole) => pole.value.trim() !== "");
+
+  if (maNiezapisanaTresc) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
