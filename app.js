@@ -1124,6 +1124,36 @@ async function updateTerminKontaktu(id, termin) {
 // docelową treść od kolegów, gdy będzie gotowa. Zmienne {{nazwa_firmy}}
 // i {{osoba_kontaktowa}} są automatycznie podstawiane przy wysyłce.
 
+function stopkaMaila(jezyk) {
+  const stanowisko = {
+    pl: "Specjalista ds. Sprzedaży",
+    en: "Sales Specialist",
+    de: "Vertriebsspezialist",
+  }[jezyk];
+
+  const pozdrowienie = {
+    pl: "Pozdrawiam",
+    en: "Best regards",
+    de: "Mit freundlichen Grüßen",
+  }[jezyk];
+
+  return `
+    <p>${pozdrowienie},</p>
+    <table cellpadding="0" cellspacing="0" style="font-family: Arial, sans-serif; font-size: 13px; color: #333; margin-top: 6px;">
+      <tr>
+        <td style="padding-right: 14px; vertical-align: middle;">
+          <img src="https://leady-crm.janasmaciej.workers.dev/logo.png" width="60" height="60" alt="ServFleet" style="display: block; border-radius: 12px;">
+        </td>
+        <td style="vertical-align: middle; border-left: 2px solid #1a73e8; padding-left: 14px;">
+          <strong style="font-size: 14px;">Maciej Janas</strong><br>
+          ${stanowisko} — ServFleet<br>
+          <a href="https://servfleet.com/" style="color: #1a73e8; text-decoration: none;">servfleet.com</a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 const EMAIL_TEMPLATES = {
   pl: {
     subject: "Propozycja współpracy — ServFleet GPS",
@@ -1131,7 +1161,7 @@ const EMAIL_TEMPLATES = {
       <p>Dzień dobry {{osoba_kontaktowa}},</p>
       <p>Piszę w imieniu ServFleet do firmy {{nazwa_firmy}} z propozycją współpracy w zakresie monitoringu GPS floty pojazdów.</p>
       <p>[TU WSTAW WŁAŚCIWĄ TREŚĆ]</p>
-      <p>Pozdrawiam,<br>Maciej Janas<br>ServFleet</p>
+      ${stopkaMaila("pl")}
     `,
   },
   en: {
@@ -1140,7 +1170,7 @@ const EMAIL_TEMPLATES = {
       <p>Hello {{osoba_kontaktowa}},</p>
       <p>I'm reaching out on behalf of ServFleet to {{nazwa_firmy}} with a proposal regarding GPS fleet monitoring.</p>
       <p>[INSERT ACTUAL CONTENT HERE]</p>
-      <p>Best regards,<br>Maciej Janas<br>ServFleet</p>
+      ${stopkaMaila("en")}
     `,
   },
   de: {
@@ -1149,7 +1179,7 @@ const EMAIL_TEMPLATES = {
       <p>Guten Tag {{osoba_kontaktowa}},</p>
       <p>ich schreibe im Namen von ServFleet an {{nazwa_firmy}} mit einem Vorschlag zur GPS-Flottenüberwachung.</p>
       <p>[HIER DEN EIGENTLICHEN TEXT EINFÜGEN]</p>
-      <p>Mit freundlichen Grüßen,<br>Maciej Janas<br>ServFleet</p>
+      ${stopkaMaila("de")}
     `,
   },
 };
