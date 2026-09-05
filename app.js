@@ -732,7 +732,11 @@ function renderTable() {
         <div class="details-grid">
           <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
-          <div><span class="details-label">E-mail</span><div>${escapeHtml(lead.email || "—")}</div></div>
+          <div>
+            <span class="details-label">E-mail</span>
+            <div>${escapeHtml(lead.email || "—")}</div>
+            <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
+          </div>
           <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
           <div>
             <span class="details-label">Termin kolejnego kontaktu</span>
@@ -749,9 +753,6 @@ function renderTable() {
               <button type="submit" class="btn-primary">Dodaj</button>
             </form>
           </div>
-        </div>
-        <div class="wyslij-mail-section">
-          <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
         </div>
       </td>
     `;

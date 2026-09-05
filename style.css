@@ -277,18 +277,17 @@ body {
   font-weight: 600;
 }
 
-.wyslij-mail-section { margin-top: 18px; }
-
 .btn-otworz-wysylke {
   background: var(--ink);
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 9px 16px;
-  font-size: 13px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-family: var(--font-body);
   cursor: pointer;
   font-weight: 600;
+  margin-top: 6px;
 }
 
 .btn-otworz-wysylke:hover { background: #000; }
