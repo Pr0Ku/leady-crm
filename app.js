@@ -14,6 +14,16 @@ const STATUS_LABELS = {
 };
 
 let currentLeady = [];
+
+// Które wiersze leadów są rozwinięte - zapamiętane w sessionStorage, żeby
+// przetrwać ciche przeładowanie karty przez przeglądarkę (np. po alt-tab
+// albo po otwarciu nowego okienka - Chrome czasem "wyładowuje" kartę w tle
+// i przeładowuje ją po cichu przy powrocie, co inaczej zwijałoby wszystko).
+let rozwinieteLeady = new Set(JSON.parse(sessionStorage.getItem("rozwinieteLeady") || "[]"));
+
+function zapiszRozwinieteLeady() {
+  sessionStorage.setItem("rozwinieteLeady", JSON.stringify([...rozwinieteLeady]));
+}
 let currentTab = "leady";
 let notatkiCache = {};
 let currentUserEmail = null;
@@ -766,11 +776,32 @@ function renderTable() {
       const details = tbody.querySelector(`.row-details[data-details-for="${cell.dataset.toggle}"]`);
       if (!details) return;
       details.hidden = !details.hidden;
+
+      if (details.hidden) {
+        rozwinieteLeady.delete(cell.dataset.toggle);
+      } else {
+        rozwinieteLeady.add(cell.dataset.toggle);
+      }
+      zapiszRozwinieteLeady();
+
       if (!details.hidden && details.dataset.notatkiLoaded !== "1") {
         details.dataset.notatkiLoaded = "1";
         await loadNotatkiLeada(cell.dataset.toggle);
       }
     });
+  });
+
+  // Automatycznie rozwiń z powrotem wiersze, które były rozwinięte przed
+  // ewentualnym cichym przeładowaniem karty przez przeglądarkę.
+  rozwinieteLeady.forEach((id) => {
+    const details = tbody.querySelector(`.row-details[data-details-for="${id}"]`);
+    if (details) {
+      details.hidden = false;
+      if (details.dataset.notatkiLoaded !== "1") {
+        details.dataset.notatkiLoaded = "1";
+        loadNotatkiLeada(id);
+      }
+    }
   });
 
   tbody.querySelectorAll(".notatka-lead-form").forEach((form) => {
