@@ -309,11 +309,11 @@ async function showDetailScreen(session, rekordId) {
   badge.className = "detail-badge " + (jestKlientem ? "detail-badge-klient" : "detail-badge-lead");
 
   const pola = [
-    ["NIP", rekord.nip],
-    ["Telefon", rekord.telefon],
-    ["E-mail", rekord.email],
+    ["NIP", rekord.nip ? escapeHtml(rekord.nip) : null],
+    ["Telefon", rekord.telefon ? escapeHtml(rekord.telefon) : null],
+    ["E-mail", rekord.email ? escapeHtml(rekord.email) : null],
     ["Strona www", rekord.www ? renderWwwCell(rekord.www) : null],
-    ["Osoba kontaktowa", rekord.osoba_kontaktowa],
+    ["Osoba kontaktowa", rekord.osoba_kontaktowa ? escapeHtml(rekord.osoba_kontaktowa) : null],
     ["Wielkość floty", rekord.wielkosc_floty != null ? rekord.wielkosc_floty : null],
   ];
 
@@ -324,14 +324,14 @@ async function showDetailScreen(session, rekordId) {
     );
   } else {
     pola.push(
-      ["Status", STATUS_LABELS[rekord.status] || rekord.status],
-      ["Przypisane do", rekord.przypisane_do ? nazwaDla(rekord.przypisane_do) : null],
+      ["Status", escapeHtml(STATUS_LABELS[rekord.status] || rekord.status)],
+      ["Przypisane do", rekord.przypisane_do ? escapeHtml(nazwaDla(rekord.przypisane_do)) : null],
       ["Termin kolejnego kontaktu", rekord.termin_kontaktu ? new Date(rekord.termin_kontaktu).toLocaleDateString("pl-PL") : null]
     );
   }
 
   document.getElementById("detail-fields").innerHTML = pola.map(([etykieta, wartosc]) => `
-    <div><span class="details-label">${etykieta}</span><div>${wartosc != null && wartosc !== "" ? wartosc : "—"}</div></div>
+    <div><span class="details-label">${escapeHtml(etykieta)}</span><div>${wartosc != null && wartosc !== "" ? wartosc : "—"}</div></div>
   `).join("");
 
   const tabelaNotatek = jestKlientem ? "notatki_klienta" : "notatki_leada";

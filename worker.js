@@ -8,6 +8,10 @@
 // statycznych plików, tak jak dotychczas.
 // ============================================================
 
+// Tylko z tego adresu appka może wołać endpoint wysyłki (nie z
+// dowolnej, obcej strony w internecie).
+const DOZWOLONE_ORIGIN = "https://leady-crm.janasmaciej.workers.dev";
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -22,7 +26,7 @@ export default {
 
 async function obslugaWyslijMail(request, env) {
   const cors = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": DOZWOLONE_ORIGIN,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
@@ -69,7 +73,28 @@ async function obslugaWyslijMail(request, env) {
     return jsonError("Brakuje pola: to, subject lub html.", 400, cors);
   }
 
-  // 3. Wyślij przez Resend.
+  // 3. Zabezpieczenie przed nadużyciem endpointu do wysyłki maili do
+  //    DOWOLNEGO adresu (nie tylko leadów w bazie) - sprawdź, że
+  //    podany adres faktycznie należy do jakiegoś rekordu w tabeli
+  //    "leady", zanim cokolwiek wyślemy. Zapytanie idzie z tokenem
+  //    tego samego użytkownika, więc respektuje te same reguły RLS
+  //    co appka.
+  const sprawdzResp = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/leady?select=id&email=eq.${encodeURIComponent(to)}&limit=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: env.SUPABASE_ANON_KEY,
+      },
+    }
+  );
+  const sprawdzDane = await sprawdzResp.json();
+
+  if (!sprawdzResp.ok || !Array.isArray(sprawdzDane) || sprawdzDane.length === 0) {
+    return jsonError("Ten adres nie odpowiada żadnemu leadowi/klientowi w bazie.", 403, cors);
+  }
+
+  // 4. Wyślij przez Resend.
   const resendResp = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
