@@ -718,7 +718,6 @@ function renderTable() {
       <td class="cell-open"><a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
-      <td class="cell-mono">${lead.wielkosc_floty != null ? lead.wielkosc_floty : "—"}</td>
       <td>
         <select class="status-select status-${lead.status}" data-id="${lead.id}">
           ${Object.entries(STATUS_LABELS).map(([key, label]) =>
@@ -740,7 +739,7 @@ function renderTable() {
     trDetails.hidden = true;
     trDetails.dataset.detailsFor = lead.id;
     trDetails.innerHTML = `
-      <td colspan="7">
+      <td colspan="6">
         <div class="details-grid">
           <div><span class="details-label">NIP</span><div>${escapeHtml(lead.nip || "—")}</div></div>
           <div><span class="details-label">Telefon</span><div>${escapeHtml(lead.telefon || "—")}</div></div>
@@ -752,6 +751,10 @@ function renderTable() {
           <div>
             <span class="details-label">Termin kolejnego kontaktu</span>
             <input type="date" class="termin-kontaktu-input" data-id="${lead.id}" value="${lead.termin_kontaktu || ""}">
+          </div>
+          <div class="flota-grid-item">
+            <span class="details-label">Wielkość floty</span>
+            <div>${lead.wielkosc_floty != null ? lead.wielkosc_floty : "—"}</div>
           </div>
           <div class="wyslij-mail-grid-item">
             <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
