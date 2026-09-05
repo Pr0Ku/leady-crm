@@ -634,6 +634,20 @@ body {
 .stat-pill-active .stat-count,
 .stat-pill-active .stat-label { color: white; }
 
+.stat-pill-sprawdz {
+  border-color: #1a73e8;
+}
+
+.stat-pill-sprawdz .stat-count { color: #1a73e8; }
+
+.stat-pill-sprawdz-active {
+  background: #1a73e8;
+  border-color: #1a73e8;
+}
+
+.stat-pill-sprawdz-active .stat-count,
+.stat-pill-sprawdz-active .stat-label { color: white; }
+
 /* ---------- TABELA ---------- */
 .table-wrap {
   background: white;

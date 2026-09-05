@@ -660,22 +660,22 @@ async function wczytajOstatnieWyslaneMaile() {
 }
 
 let filterDoDzis = false;
+let filterSprawdzOdpowiedz = false;
 
 const DNI_DO_PRZYPOMNIENIA_O_MAILU = 14;
 
 function jestPilnyDzis(lead) {
   const dzisiaj = new Date().toISOString().slice(0, 10);
   if (lead.termin_kontaktu) return lead.termin_kontaktu <= dzisiaj;
-
-  if (lead.status === "mail_wyslany") {
-    const dataWyslania = ostatniMailWyslanyMap[lead.id];
-    if (dataWyslania) {
-      const dniOdWyslania = (Date.now() - new Date(dataWyslania).getTime()) / (1000 * 60 * 60 * 24);
-      if (dniOdWyslania >= DNI_DO_PRZYPOMNIENIA_O_MAILU) return true;
-    }
-  }
-
   return lead.status === "do_zadzwonienia";
+}
+
+function jestDoSprawdzeniaOdpowiedzi(lead) {
+  if (lead.status !== "mail_wyslany") return false;
+  const dataWyslania = ostatniMailWyslanyMap[lead.id];
+  if (!dataWyslania) return false;
+  const dniOdWyslania = (Date.now() - new Date(dataWyslania).getTime()) / (1000 * 60 * 60 * 24);
+  return dniOdWyslania >= DNI_DO_PRZYPOMNIENIA_O_MAILU;
 }
 
 function renderStats() {
@@ -684,11 +684,16 @@ function renderStats() {
   leadyOnly.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
 
   const doDzisLiczba = leadyOnly.filter(jestPilnyDzis).length;
+  const sprawdzOdpowiedzLiczba = leadyOnly.filter(jestDoSprawdzeniaOdpowiedzi).length;
 
   statsRow.innerHTML = `
     <div class="stat-pill stat-pill-pilne ${filterDoDzis ? "stat-pill-active" : ""}" data-pilne="1">
       <span class="stat-count">${doDzisLiczba}</span>
       <span class="stat-label">Do dziś</span>
+    </div>
+    <div class="stat-pill stat-pill-sprawdz ${filterSprawdzOdpowiedz ? "stat-pill-sprawdz-active" : ""}" data-sprawdz="1">
+      <span class="stat-count">${sprawdzOdpowiedzLiczba}</span>
+      <span class="stat-label">Sprawdź odpowiedź</span>
     </div>
   ` + Object.entries(STATUS_LABELS).map(([key, label]) => `
     <div class="stat-pill" data-status="${key}">
@@ -700,6 +705,7 @@ function renderStats() {
   statsRow.querySelectorAll(".stat-pill[data-status]").forEach((pill) => {
     pill.addEventListener("click", () => {
       filterDoDzis = false;
+      filterSprawdzOdpowiedz = false;
       statusFilter.value = pill.dataset.status;
       render();
     });
@@ -708,6 +714,15 @@ function renderStats() {
   const pilnaPill = statsRow.querySelector(".stat-pill-pilne");
   pilnaPill.addEventListener("click", () => {
     filterDoDzis = !filterDoDzis;
+    filterSprawdzOdpowiedz = false;
+    statusFilter.value = "";
+    render();
+  });
+
+  const sprawdzPill = statsRow.querySelector(".stat-pill-sprawdz");
+  sprawdzPill.addEventListener("click", () => {
+    filterSprawdzOdpowiedz = !filterSprawdzOdpowiedz;
+    filterDoDzis = false;
     statusFilter.value = "";
     render();
   });
@@ -721,6 +736,7 @@ function getFilteredLeady() {
     if (l.numer_klienta) return false;
     if (statusVal && l.status !== statusVal) return false;
     if (filterDoDzis && !jestPilnyDzis(l)) return false;
+    if (filterSprawdzOdpowiedz && !jestDoSprawdzeniaOdpowiedzi(l)) return false;
     if (filterMaEmail.checked && !l.email) return false;
     if (filterMaTelefon.checked && !l.telefon) return false;
     if (filterMaWww.checked && !l.www) return false;
