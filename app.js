@@ -263,6 +263,7 @@ function showLogin() {
   czatToggle.hidden = true;
   czatWidget.hidden = true;
   stopHeartbeat();
+  zatrzymajRealtime();
 }
 
 function showSetPasswordScreen() {
@@ -286,6 +287,7 @@ function showApp(session) {
   loadZgloszenia();
   loadCzat();
   startHeartbeat();
+  uruchomRealtime();
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -313,6 +315,7 @@ async function showDetailScreen(session, rekordId) {
   detailScreen.hidden = false;
   sendMailScreen.hidden = true;
   currentUserEmail = session.user.email;
+  uruchomRealtime();
 
   const { data: rekord, error } = await supabaseClient
     .from("leady")
@@ -2007,6 +2010,69 @@ function stopHeartbeat() {
   heartbeatInterval = null;
   if (czatPollInterval) clearInterval(czatPollInterval);
   czatPollInterval = null;
+}
+
+// -------------------- REALTIME (natychmiastowe zmiany bez odswiezania) --------------------
+//
+// Jeden wspolny kanal nasluchujacy zmian we wszystkich tabelach z
+// "zywymi" danymi. Kazdy handler po prostu wola juz istniejaca
+// funkcje odswiezajaca (loadLeady, loadZgloszenia itd.) - dzieki temu
+// caly logika renderowania (w tym przywracanie rozwinietych wierszy)
+// zostaje w jednym miejscu, bez duplikowania.
+
+let kanalRealtime = null;
+
+function uruchomRealtime() {
+  if (kanalRealtime) return; // juz dziala, nie dubluj
+
+  kanalRealtime = supabaseClient
+    .channel("leady-crm-zmiany")
+    .on("postgres_changes", { event: "*", schema: "public", table: "leady" }, () => {
+      loadLeady();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "zgloszenia" }, () => {
+      loadZgloszenia();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "zgloszenia_komentarze" }, (payload) => {
+      const zgloszenieId = payload.new?.zgloszenie_id || payload.old?.zgloszenie_id;
+      if (zgloszenieId && komentarzeCache[zgloszenieId]) {
+        loadKomentarze(zgloszenieId);
+      }
+      loadZgloszenia(); // odswiez tez licznik/podswietlenie w tabeli
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "czat_ogolny" }, () => {
+      loadCzat();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+      loadOnlineUsers();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "notatki_leada" }, (payload) => {
+      const leadId = payload.new?.lead_id || payload.old?.lead_id;
+      const kontener = document.getElementById(`notatki-lead-thread-${leadId}`);
+      if (kontener) loadNotatkiLeada(leadId);
+      if (!detailScreen.hidden) loadDetailNotatki(leadId, "notatki_leada");
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "notatki_klienta" }, (payload) => {
+      const leadId = payload.new?.lead_id || payload.old?.lead_id;
+      const kontener = document.getElementById(`notatki-thread-${leadId}`);
+      if (kontener) loadAndRenderNotatki(leadId);
+      if (!detailScreen.hidden) loadDetailNotatki(leadId, "notatki_klienta");
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "dziennik_polaczen" }, (payload) => {
+      const leadId = payload.new?.lead_id || payload.old?.lead_id;
+      if (!detailScreen.hidden && leadId) loadDetailPolaczenia(leadId);
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "wyslane_maile" }, () => {
+      wczytajOstatnieWyslaneMaile().then(renderStats);
+    })
+    .subscribe();
+}
+
+function zatrzymajRealtime() {
+  if (kanalRealtime) {
+    supabaseClient.removeChannel(kanalRealtime);
+    kanalRealtime = null;
+  }
 }
 
 // -------------------- NIEPRZECZYTANE WIADOMOŚCI CZATU --------------------
