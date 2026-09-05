@@ -208,17 +208,18 @@ async function routujDoWlasciwegoEkranu(session) {
 
   let rekordId = getRekordIdFromUrl();
 
-  // Krótszy, czytelniejszy link do klienta - np. /c0001 zamiast
-  // ?rekord=<uuid>. Dziala tylko dla klientow (maja numer), leady
-  // nadal uzywaja ?rekord= (nie maja czytelnego identyfikatora).
+  // Krótszy, czytelniejszy link do rekordu w URL - /c0001 dla klienta,
+  // /l0001 dla leada. Sprawdzamy obie kolumny na wszelki wypadek (gdyby
+  // ktos mial zapisany stary link L-xxxx do leada, ktory w miedzyczasie
+  // zostal klientem - link i tak zadziala, znajdzie ten sam rekord).
   if (!rekordId) {
-    const numerKlienta = getNumerKlientaFromUrl();
-    if (numerKlienta) {
+    const kodZUrl = getKodRekorduFromUrl();
+    if (kodZUrl) {
       const { data } = await supabaseClient
         .from("leady")
         .select("id")
-        .eq("numer_klienta", numerKlienta)
-        .single();
+        .or(`numer_klienta.eq.${kodZUrl},numer_leada.eq.${kodZUrl}`)
+        .maybeSingle();
       if (data) rekordId = data.id;
     }
   }
@@ -243,9 +244,9 @@ function getRekordIdFromUrl() {
   return new URLSearchParams(window.location.search).get("rekord");
 }
 
-function getNumerKlientaFromUrl() {
+function getKodRekorduFromUrl() {
   const sciezka = window.location.pathname.replace(/^\/+/, "").trim();
-  if (/^c\d+$/i.test(sciezka)) return sciezka.toUpperCase();
+  if (/^[lc]\d+$/i.test(sciezka)) return sciezka.toUpperCase();
   return null;
 }
 
@@ -331,7 +332,7 @@ async function showDetailScreen(session, rekordId) {
   document.getElementById("detail-lokalizacja").textContent = rekord.lokalizacja || "";
 
   const badge = document.getElementById("detail-badge");
-  badge.textContent = jestKlientem ? `Klient ${rekord.numer_klienta}` : "Lead";
+  badge.textContent = jestKlientem ? `Klient ${rekord.numer_klienta}` : `Lead ${rekord.numer_leada || ""}`;
   badge.className = "detail-badge " + (jestKlientem ? "detail-badge-klient" : "detail-badge-lead");
 
   const pola = [
@@ -794,7 +795,7 @@ function renderTable() {
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
-      <td class="cell-open"><a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
+      <td class="cell-open"><a href="/${lead.numer_leada ? lead.numer_leada.toLowerCase() : "?rekord=" + lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>
