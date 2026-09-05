@@ -266,6 +266,22 @@
   </main>
 </div>
 
+<!-- MAŁE OKNO: wybór języka i wysyłka maila do jednego leada -->
+<div id="send-mail-screen" class="screen" hidden>
+  <div class="send-mail-card">
+    <h2 id="send-mail-nazwa" class="send-mail-title"></h2>
+    <p class="send-mail-sub">Wybierz język maila — wysyłka nastąpi natychmiast po kliknięciu.</p>
+
+    <div class="send-mail-buttons">
+      <button type="button" class="btn-send-mail-lang" data-lang="pl">🇵🇱 Polski</button>
+      <button type="button" class="btn-send-mail-lang" data-lang="en">🇬🇧 English</button>
+      <button type="button" class="btn-send-mail-lang" data-lang="de">🇩🇪 Deutsch</button>
+    </div>
+
+    <div id="send-mail-status" class="send-mail-status" hidden></div>
+  </div>
+</div>
+
 <!-- MODAL: dodawanie / edycja firmy -->
 <div id="lead-modal" class="modal-overlay" hidden>
   <div class="modal">

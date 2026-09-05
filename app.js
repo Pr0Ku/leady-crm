@@ -25,8 +25,10 @@ function nazwaDla(email) {
 }
 
 function otworzWOknie(url) {
-  const szerokosc = 1000;
-  const wysokosc = 850;
+  otworzOknoWMniejszymRozmiarze(url, 1000, 850);
+}
+
+function otworzOknoWMniejszymRozmiarze(url, szerokosc, wysokosc) {
   const lewo = window.screenX + (window.outerWidth - szerokosc) / 2;
   const gora = window.screenY + (window.outerHeight - wysokosc) / 2;
   window.open(
@@ -41,6 +43,7 @@ const loginScreen = document.getElementById("login-screen");
 const setPasswordScreen = document.getElementById("set-password-screen");
 const appScreen = document.getElementById("app-screen");
 const detailScreen = document.getElementById("detail-screen");
+const sendMailScreen = document.getElementById("send-mail-screen");
 const loginForm = document.getElementById("login-form");
 const loginMessage = document.getElementById("login-message");
 const loginBtn = document.getElementById("login-btn");
@@ -184,7 +187,10 @@ async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
     const rekordId = getRekordIdFromUrl();
-    if (rekordId) {
+    const wyslijMailId = getWyslijMailIdFromUrl();
+    if (wyslijMailId) {
+      showSendMailScreen(session, wyslijMailId);
+    } else if (rekordId) {
       showDetailScreen(session, rekordId);
     } else {
       showApp(session);
@@ -198,11 +204,16 @@ function getRekordIdFromUrl() {
   return new URLSearchParams(window.location.search).get("rekord");
 }
 
+function getWyslijMailIdFromUrl() {
+  return new URLSearchParams(window.location.search).get("wyslij_mail");
+}
+
 function showLogin() {
   loginScreen.hidden = false;
   setPasswordScreen.hidden = true;
   appScreen.hidden = true;
   detailScreen.hidden = true;
+  sendMailScreen.hidden = true;
   czatToggle.hidden = true;
   czatWidget.hidden = true;
   stopHeartbeat();
@@ -213,6 +224,7 @@ function showSetPasswordScreen() {
   setPasswordScreen.hidden = false;
   appScreen.hidden = true;
   detailScreen.hidden = true;
+  sendMailScreen.hidden = true;
 }
 
 function showApp(session) {
@@ -220,6 +232,7 @@ function showApp(session) {
   setPasswordScreen.hidden = true;
   appScreen.hidden = false;
   detailScreen.hidden = true;
+  sendMailScreen.hidden = true;
   userEmailEl.textContent = session.user.email;
   currentUserEmail = session.user.email;
   czatToggle.hidden = false;
@@ -238,7 +251,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // zapisze nowe haslo.
     if (setPasswordScreen.hidden) {
       const rekordId = getRekordIdFromUrl();
-      if (rekordId) {
+      const wyslijMailId = getWyslijMailIdFromUrl();
+      if (wyslijMailId) {
+        showSendMailScreen(session, wyslijMailId);
+      } else if (rekordId) {
         showDetailScreen(session, rekordId);
       } else {
         showApp(session);
@@ -256,6 +272,7 @@ async function showDetailScreen(session, rekordId) {
   setPasswordScreen.hidden = true;
   appScreen.hidden = true;
   detailScreen.hidden = false;
+  sendMailScreen.hidden = true;
   currentUserEmail = session.user.email;
 
   const { data: rekord, error } = await supabaseClient
@@ -380,6 +397,62 @@ async function loadDetailWyslaneMaile(rekordId) {
       </div>
     </div>
   `).join("");
+}
+
+// -------------------- MAŁE OKNO: wybór języka i wysyłka maila --------------------
+
+async function showSendMailScreen(session, leadId) {
+  loginScreen.hidden = true;
+  setPasswordScreen.hidden = true;
+  appScreen.hidden = true;
+  detailScreen.hidden = true;
+  sendMailScreen.hidden = false;
+  currentUserEmail = session.user.email;
+
+  const statusEl = document.getElementById("send-mail-status");
+  statusEl.hidden = true;
+
+  const { data: lead, error } = await supabaseClient
+    .from("leady")
+    .select("*")
+    .eq("id", leadId)
+    .single();
+
+  if (error || !lead) {
+    document.getElementById("send-mail-nazwa").textContent = "Nie znaleziono rekordu.";
+    return;
+  }
+
+  document.title = `Wyślij mail — ${lead.nazwa_firmy}`;
+  document.getElementById("send-mail-nazwa").textContent = lead.nazwa_firmy;
+
+  if (!lead.email) {
+    statusEl.hidden = false;
+    statusEl.textContent = "Ten lead nie ma podanego adresu e-mail - uzupełnij go najpierw w edycji firmy.";
+    statusEl.classList.add("send-mail-status-error");
+    document.querySelectorAll(".btn-send-mail-lang").forEach((b) => { b.disabled = true; });
+    return;
+  }
+
+  document.querySelectorAll(".btn-send-mail-lang").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".btn-send-mail-lang").forEach((b) => { b.disabled = true; });
+      statusEl.hidden = false;
+      statusEl.classList.remove("send-mail-status-error");
+      statusEl.textContent = "Wysyłam…";
+
+      const wynik = await wyslijMailCore(lead, btn.dataset.lang);
+
+      if (wynik.success) {
+        statusEl.textContent = `Wysłano do ${wynik.adres}. To okno zamknie się za chwilę…`;
+        setTimeout(() => window.close(), 2500);
+      } else {
+        statusEl.classList.add("send-mail-status-error");
+        statusEl.textContent = "Nie udało się wysłać: " + wynik.error;
+        document.querySelectorAll(".btn-send-mail-lang").forEach((b) => { b.disabled = false; });
+      }
+    });
+  });
 }
 
 const WYNIK_LABELS = {
@@ -678,12 +751,7 @@ function renderTable() {
           </div>
         </div>
         <div class="wyslij-mail-section">
-          <span class="details-label">Wyślij mail</span>
-          <div class="wyslij-mail-buttons">
-            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="pl">🇵🇱 Polski</button>
-            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="en">🇬🇧 English</button>
-            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="de">🇩🇪 Deutsch</button>
-          </div>
+          <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">✉ Wyślij mail</button>
         </div>
       </td>
     `;
@@ -713,8 +781,10 @@ function renderTable() {
     });
   });
 
-  tbody.querySelectorAll(".btn-wyslij-mail").forEach((btn) => {
-    btn.addEventListener("click", () => wyslijMailDoLeada(btn.dataset.id, btn.dataset.lang, btn));
+  tbody.querySelectorAll(".btn-otworz-wysylke").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      otworzOknoWMniejszymRozmiarze(`?wyslij_mail=${btn.dataset.id}`, 460, 420);
+    });
   });
 
   tbody.querySelectorAll(".termin-kontaktu-input").forEach((input) => {
@@ -1051,21 +1121,13 @@ function wypelnijSzablon(tekst, lead) {
     .replaceAll("{{osoba_kontaktowa}}", escapeHtml(lead.osoba_kontaktowa || (lead.nazwa_firmy || "")));
 }
 
-async function wyslijMailDoLeada(leadId, jezyk, btn) {
-  const lead = currentLeady.find((l) => l.id === leadId);
-  if (!lead) return;
-
+async function wyslijMailCore(lead, jezyk) {
   if (!lead.email) {
-    showToast("Ten lead nie ma podanego adresu e-mail.", true);
-    return;
+    return { success: false, error: "Ten lead nie ma podanego adresu e-mail." };
   }
 
   const szablon = EMAIL_TEMPLATES[jezyk];
-  if (!szablon) return;
-
-  btn.disabled = true;
-  const oryginalnyTekst = btn.textContent;
-  btn.textContent = "Wysyłam…";
+  if (!szablon) return { success: false, error: "Nieznany język." };
 
   const { data: { session } } = await supabaseClient.auth.getSession();
 
@@ -1086,30 +1148,23 @@ async function wyslijMailDoLeada(leadId, jezyk, btn) {
     const dane = await resp.json();
 
     if (!resp.ok) {
-      showToast("Nie udało się wysłać maila: " + (dane.error || "nieznany błąd"), true);
-      return;
+      return { success: false, error: dane.error || "nieznany błąd" };
     }
 
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     await supabaseClient.from("wyslane_maile").insert({
-      lead_id: leadId,
+      lead_id: lead.id,
       jezyk,
       adres_docelowy: lead.email,
       autor: user.email,
     });
 
-    await supabaseClient.from("leady").update({ status: "mail_wyslany" }).eq("id", leadId);
-    lead.status = "mail_wyslany";
-    renderStats();
-    render();
+    await supabaseClient.from("leady").update({ status: "mail_wyslany" }).eq("id", lead.id);
 
-    showToast(`Mail (${jezyk.toUpperCase()}) wysłany do ${lead.email}.`);
+    return { success: true, adres: lead.email };
   } catch (err) {
-    showToast("Błąd połączenia z zapleczem wysyłki: " + err.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = oryginalnyTekst;
+    return { success: false, error: "Błąd połączenia z zapleczem wysyłki: " + err.message };
   }
 }
 
