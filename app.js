@@ -751,7 +751,7 @@ function renderTable() {
           </div>
         </div>
         <div class="wyslij-mail-section">
-          <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">✉ Wyślij mail</button>
+          <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
         </div>
       </td>
     `;
