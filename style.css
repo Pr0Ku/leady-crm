@@ -222,6 +222,28 @@ body {
   font-weight: 600;
 }
 
+.wyslij-mail-section { margin-top: 18px; }
+
+.wyslij-mail-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn-wyslij-mail {
+  background: white;
+  border: 1px solid var(--paper-dim);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-wyslij-mail:hover { border-color: var(--amber); background: #fffaf0; }
+.btn-wyslij-mail:disabled { opacity: 0.6; cursor: default; }
+
 #login-btn:hover { background: var(--amber-dim); }
 #login-btn:disabled { opacity: 0.6; cursor: default; }
 

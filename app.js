@@ -348,6 +348,38 @@ async function showDetailScreen(session, rekordId) {
       await loadDetailPolaczenia(rekordId);
     }
   });
+
+  await loadDetailWyslaneMaile(rekordId);
+}
+
+const JEZYK_LABELS = { pl: "Polski", en: "English", de: "Deutsch" };
+
+async function loadDetailWyslaneMaile(rekordId) {
+  const container = document.getElementById("detail-maile-list");
+  const { data, error } = await supabaseClient
+    .from("wyslane_maile")
+    .select("*")
+    .eq("lead_id", rekordId)
+    .order("wyslano_o", { ascending: false });
+
+  if (error) {
+    container.innerHTML = `<p class="zgloszenia-loading">Błąd wczytywania historii maili.</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p class="zgloszenia-loading">Nie wysłano jeszcze żadnego maila.</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map((m) => `
+    <div class="notatka-item">
+      <div class="notatka-meta">
+        <span class="polaczenie-wynik-pill">${JEZYK_LABELS[m.jezyk] || m.jezyk}</span>
+        · na adres ${escapeHtml(m.adres_docelowy)} · ${escapeHtml(nazwaDla(m.autor) || "—")} · ${new Date(m.wyslano_o).toLocaleString("pl-PL")}
+      </div>
+    </div>
+  `).join("");
 }
 
 const WYNIK_LABELS = {
@@ -645,6 +677,14 @@ function renderTable() {
             </form>
           </div>
         </div>
+        <div class="wyslij-mail-section">
+          <span class="details-label">Wyślij mail</span>
+          <div class="wyslij-mail-buttons">
+            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="pl">🇵🇱 Polski</button>
+            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="en">🇬🇧 English</button>
+            <button type="button" class="btn-wyslij-mail" data-id="${lead.id}" data-lang="de">🇩🇪 Deutsch</button>
+          </div>
+        </div>
       </td>
     `;
     tbody.appendChild(trDetails);
@@ -671,6 +711,10 @@ function renderTable() {
       await dodajNotatkeLeada(form.dataset.id, tresc);
       textarea.value = "";
     });
+  });
+
+  tbody.querySelectorAll(".btn-wyslij-mail").forEach((btn) => {
+    btn.addEventListener("click", () => wyslijMailDoLeada(btn.dataset.id, btn.dataset.lang, btn));
   });
 
   tbody.querySelectorAll(".termin-kontaktu-input").forEach((input) => {
@@ -962,6 +1006,110 @@ async function updateTerminKontaktu(id, termin) {
     if (lead) lead.termin_kontaktu = termin;
     renderStats();
     showToast("Termin zapisany.");
+  }
+}
+
+// -------------------- WYSYŁKA MAILI (Resend przez zaplecze) --------------------
+//
+// UWAGA: to placeholdery ("[TU WSTAW TREŚĆ]") - Maciej podmieni je na
+// docelową treść od kolegów, gdy będzie gotowa. Zmienne {{nazwa_firmy}}
+// i {{osoba_kontaktowa}} są automatycznie podstawiane przy wysyłce.
+
+const EMAIL_TEMPLATES = {
+  pl: {
+    subject: "Propozycja współpracy — ServFleet GPS",
+    html: `
+      <p>Dzień dobry {{osoba_kontaktowa}},</p>
+      <p>Piszę w imieniu ServFleet do firmy {{nazwa_firmy}} z propozycją współpracy w zakresie monitoringu GPS floty pojazdów.</p>
+      <p>[TU WSTAW WŁAŚCIWĄ TREŚĆ]</p>
+      <p>Pozdrawiam,<br>Maciej Janas<br>ServFleet</p>
+    `,
+  },
+  en: {
+    subject: "Partnership proposal — ServFleet GPS",
+    html: `
+      <p>Hello {{osoba_kontaktowa}},</p>
+      <p>I'm reaching out on behalf of ServFleet to {{nazwa_firmy}} with a proposal regarding GPS fleet monitoring.</p>
+      <p>[INSERT ACTUAL CONTENT HERE]</p>
+      <p>Best regards,<br>Maciej Janas<br>ServFleet</p>
+    `,
+  },
+  de: {
+    subject: "Kooperationsvorschlag — ServFleet GPS",
+    html: `
+      <p>Guten Tag {{osoba_kontaktowa}},</p>
+      <p>ich schreibe im Namen von ServFleet an {{nazwa_firmy}} mit einem Vorschlag zur GPS-Flottenüberwachung.</p>
+      <p>[HIER DEN EIGENTLICHEN TEXT EINFÜGEN]</p>
+      <p>Mit freundlichen Grüßen,<br>Maciej Janas<br>ServFleet</p>
+    `,
+  },
+};
+
+function wypelnijSzablon(tekst, lead) {
+  return tekst
+    .replaceAll("{{nazwa_firmy}}", escapeHtml(lead.nazwa_firmy || ""))
+    .replaceAll("{{osoba_kontaktowa}}", escapeHtml(lead.osoba_kontaktowa || (lead.nazwa_firmy || "")));
+}
+
+async function wyslijMailDoLeada(leadId, jezyk, btn) {
+  const lead = currentLeady.find((l) => l.id === leadId);
+  if (!lead) return;
+
+  if (!lead.email) {
+    showToast("Ten lead nie ma podanego adresu e-mail.", true);
+    return;
+  }
+
+  const szablon = EMAIL_TEMPLATES[jezyk];
+  if (!szablon) return;
+
+  btn.disabled = true;
+  const oryginalnyTekst = btn.textContent;
+  btn.textContent = "Wysyłam…";
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  try {
+    const resp = await fetch("/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        to: lead.email,
+        subject: wypelnijSzablon(szablon.subject, lead),
+        html: wypelnijSzablon(szablon.html, lead),
+      }),
+    });
+
+    const dane = await resp.json();
+
+    if (!resp.ok) {
+      showToast("Nie udało się wysłać maila: " + (dane.error || "nieznany błąd"), true);
+      return;
+    }
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    await supabaseClient.from("wyslane_maile").insert({
+      lead_id: leadId,
+      jezyk,
+      adres_docelowy: lead.email,
+      autor: user.email,
+    });
+
+    await supabaseClient.from("leady").update({ status: "mail_wyslany" }).eq("id", leadId);
+    lead.status = "mail_wyslany";
+    renderStats();
+    render();
+
+    showToast(`Mail (${jezyk.toUpperCase()}) wysłany do ${lead.email}.`);
+  } catch (err) {
+    showToast("Błąd połączenia z zapleczem wysyłki: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oryginalnyTekst;
   }
 }
 
