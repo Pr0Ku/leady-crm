@@ -630,15 +630,51 @@ async function loadLeady() {
   }
 
   currentLeady = data || [];
+  await wczytajOstatnieWyslaneMaile();
   renderStats();
   render();
 }
 
+// Dla kazdego leada zapamietaj date NAJNOWSZEGO wyslanego maila -
+// potrzebne do przypomnienia "sprawdz czy klient odpisal" po 14 dniach
+// ciszy (status wciaz "Mail wyslany", nikt nic nie zmienil).
+let ostatniMailWyslanyMap = {};
+
+async function wczytajOstatnieWyslaneMaile() {
+  ostatniMailWyslanyMap = {};
+  const idyLeadow = currentLeady.map((l) => l.id);
+  if (idyLeadow.length === 0) return;
+
+  const { data, error } = await supabaseClient
+    .from("wyslane_maile")
+    .select("lead_id, wyslano_o")
+    .in("lead_id", idyLeadow);
+
+  if (error || !data) return;
+
+  data.forEach((m) => {
+    if (!ostatniMailWyslanyMap[m.lead_id] || m.wyslano_o > ostatniMailWyslanyMap[m.lead_id]) {
+      ostatniMailWyslanyMap[m.lead_id] = m.wyslano_o;
+    }
+  });
+}
+
 let filterDoDzis = false;
+
+const DNI_DO_PRZYPOMNIENIA_O_MAILU = 14;
 
 function jestPilnyDzis(lead) {
   const dzisiaj = new Date().toISOString().slice(0, 10);
   if (lead.termin_kontaktu) return lead.termin_kontaktu <= dzisiaj;
+
+  if (lead.status === "mail_wyslany") {
+    const dataWyslania = ostatniMailWyslanyMap[lead.id];
+    if (dataWyslania) {
+      const dniOdWyslania = (Date.now() - new Date(dataWyslania).getTime()) / (1000 * 60 * 60 * 24);
+      if (dniOdWyslania >= DNI_DO_PRZYPOMNIENIA_O_MAILU) return true;
+    }
+  }
+
   return lead.status === "do_zadzwonienia";
 }
 
