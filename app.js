@@ -735,12 +735,14 @@ function renderTable() {
           <div>
             <span class="details-label">E-mail</span>
             <div>${escapeHtml(lead.email || "—")}</div>
-            <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
           </div>
           <div><span class="details-label">Strona www</span><div>${renderWwwCell(lead.www)}</div></div>
           <div>
             <span class="details-label">Termin kolejnego kontaktu</span>
             <input type="date" class="termin-kontaktu-input" data-id="${lead.id}" value="${lead.termin_kontaktu || ""}">
+          </div>
+          <div class="wyslij-mail-grid-item">
+            <button type="button" class="btn-otworz-wysylke" data-id="${lead.id}" data-nazwa="${escapeHtml(lead.nazwa_firmy)}">Wyślij mail</button>
           </div>
           <div class="details-notatki">
             <span class="details-label">Notatki</span>
