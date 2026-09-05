@@ -28,6 +28,7 @@ let currentTab = "leady";
 let notatkiCache = {};
 let currentUserEmail = null;
 let profilesByEmail = {};
+let emailWysylkowyByEmail = {};
 const ADMIN_EMAIL = "janasmaciej@wp.pl";
 
 function nazwaDla(email) {
@@ -420,6 +421,7 @@ async function showSendMailScreen(session, leadId) {
   detailScreen.hidden = true;
   sendMailScreen.hidden = false;
   currentUserEmail = session.user.email;
+  await loadOnlineUsers();
 
   const statusEl = document.getElementById("send-mail-status");
   statusEl.hidden = true;
@@ -1124,7 +1126,7 @@ async function updateTerminKontaktu(id, termin) {
 // docelową treść od kolegów, gdy będzie gotowa. Zmienne {{nazwa_firmy}}
 // i {{osoba_kontaktowa}} są automatycznie podstawiane przy wysyłce.
 
-function stopkaMaila(jezyk) {
+function stopkaMaila(jezyk, nazwaNadawcy) {
   const stanowisko = {
     pl: "Specjalista ds. Sprzedaży",
     en: "Sales Specialist",
@@ -1145,7 +1147,7 @@ function stopkaMaila(jezyk) {
           <img src="https://leady-crm.janasmaciej.workers.dev/logo.png" width="60" height="60" alt="ServFleet" style="display: block; border-radius: 12px;">
         </td>
         <td style="vertical-align: middle; border-left: 2px solid #1a73e8; padding-left: 14px;">
-          <strong style="font-size: 14px;">Maciej Janas</strong><br>
+          <strong style="font-size: 14px;">${escapeHtml(nazwaNadawcy)}</strong><br>
           ${stanowisko} — ServFleet<br>
           <a href="https://servfleet.com/" style="color: #1a73e8; text-decoration: none;">servfleet.com</a>
         </td>
@@ -1161,7 +1163,7 @@ const EMAIL_TEMPLATES = {
       <p>Dzień dobry {{osoba_kontaktowa}},</p>
       <p>Piszę w imieniu ServFleet do firmy {{nazwa_firmy}} z propozycją współpracy w zakresie monitoringu GPS floty pojazdów.</p>
       <p>[TU WSTAW WŁAŚCIWĄ TREŚĆ]</p>
-      ${stopkaMaila("pl")}
+      {{stopka}}
     `,
   },
   en: {
@@ -1170,7 +1172,7 @@ const EMAIL_TEMPLATES = {
       <p>Hello {{osoba_kontaktowa}},</p>
       <p>I'm reaching out on behalf of ServFleet to {{nazwa_firmy}} with a proposal regarding GPS fleet monitoring.</p>
       <p>[INSERT ACTUAL CONTENT HERE]</p>
-      ${stopkaMaila("en")}
+      {{stopka}}
     `,
   },
   de: {
@@ -1179,15 +1181,17 @@ const EMAIL_TEMPLATES = {
       <p>Guten Tag {{osoba_kontaktowa}},</p>
       <p>ich schreibe im Namen von ServFleet an {{nazwa_firmy}} mit einem Vorschlag zur GPS-Flottenüberwachung.</p>
       <p>[HIER DEN EIGENTLICHEN TEXT EINFÜGEN]</p>
-      ${stopkaMaila("de")}
+      {{stopka}}
     `,
   },
 };
 
-function wypelnijSzablon(tekst, lead) {
+function wypelnijSzablon(tekst, lead, jezyk) {
+  const nazwaNadawcy = nazwaDla(currentUserEmail);
   return tekst
     .replaceAll("{{nazwa_firmy}}", escapeHtml(lead.nazwa_firmy || ""))
-    .replaceAll("{{osoba_kontaktowa}}", escapeHtml(lead.osoba_kontaktowa || (lead.nazwa_firmy || "")));
+    .replaceAll("{{osoba_kontaktowa}}", escapeHtml(lead.osoba_kontaktowa || (lead.nazwa_firmy || "")))
+    .replaceAll("{{stopka}}", stopkaMaila(jezyk, nazwaNadawcy));
 }
 
 async function wyslijMailCore(lead, jezyk) {
@@ -1209,8 +1213,8 @@ async function wyslijMailCore(lead, jezyk) {
       },
       body: JSON.stringify({
         to: lead.email,
-        subject: wypelnijSzablon(szablon.subject, lead),
-        html: wypelnijSzablon(szablon.html, lead),
+        subject: wypelnijSzablon(szablon.subject, lead, jezyk),
+        html: wypelnijSzablon(szablon.html, lead, jezyk),
       }),
     });
 
@@ -1990,7 +1994,10 @@ async function loadOnlineUsers() {
   }
 
   profilesByEmail = {};
-  (data || []).forEach((p) => { profilesByEmail[p.email] = p.display_name; });
+  (data || []).forEach((p) => {
+    profilesByEmail[p.email] = p.display_name;
+    emailWysylkowyByEmail[p.email] = p.email_wysylkowy;
+  });
   if (currentUserEmail) userEmailEl.textContent = nazwaDla(currentUserEmail);
 
   renderOnlineList(data || []);
@@ -2062,19 +2069,29 @@ function renderOnlineList(profiles) {
 }
 
 async function edytujNazweUzytkownika(email) {
-  const obecna = profilesByEmail[email] || "";
-  const nowaNazwa = window.prompt(`Nazwa wyświetlana dla ${email}:`, obecna);
+  const obecnaNazwa = profilesByEmail[email] || "";
+  const nowaNazwa = window.prompt(`Nazwa wyświetlana dla ${email}:`, obecnaNazwa);
   if (nowaNazwa === null) return;
+
+  const obecnyEmailWysylkowy = emailWysylkowyByEmail[email] || "";
+  const nowyEmailWysylkowy = window.prompt(
+    `Adres @servfleet.com, z którego ta osoba ma wysyłać maile (zostaw puste, jeśli jeszcze nie ma):`,
+    obecnyEmailWysylkowy
+  );
+  if (nowyEmailWysylkowy === null) return;
 
   const { error } = await supabaseClient
     .from("profiles")
-    .update({ display_name: nowaNazwa.trim() || null })
+    .update({
+      display_name: nowaNazwa.trim() || null,
+      email_wysylkowy: nowyEmailWysylkowy.trim() || null,
+    })
     .eq("email", email);
 
   if (error) {
-    showToast("Nie udało się zapisać nazwy: " + error.message, true);
+    showToast("Nie udało się zapisać: " + error.message, true);
   } else {
-    showToast("Nazwa zapisana.");
+    showToast("Zapisano.");
     await loadOnlineUsers();
     await loadCzat();
     await loadZgloszenia();

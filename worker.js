@@ -59,6 +59,24 @@ async function obslugaWyslijMail(request, env) {
 
   const user = await userResp.json();
 
+  // 1b. Pobierz z bazy profil nadawcy (nazwa wyświetlana + jego własny
+  //     adres @servfleet.com) - appka nigdy nie ufa temu, co przyjdzie
+  //     w tym zakresie od samej przeglądarki, żeby ktoś nie mógł się
+  //     "podpisać" jako ktoś inny.
+  const profilResp = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/profiles?select=display_name,email_wysylkowy&email=eq.${encodeURIComponent(user.email)}&limit=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: env.SUPABASE_ANON_KEY,
+      },
+    }
+  );
+  const profilDane = (await profilResp.json())[0] || {};
+
+  const nazwaNadawcy = profilDane.display_name || "Maciej Janas";
+  const adresNadawcy = profilDane.email_wysylkowy || "maciej@servfleet.com";
+
   // 2. Odczytaj dane maila z żądania appki.
   let body;
   try {
@@ -102,11 +120,11 @@ async function obslugaWyslijMail(request, env) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Maciej Janas <maciej@servfleet.com>",
+      from: `${nazwaNadawcy} <${adresNadawcy}>`,
       to: [to],
       subject,
       html,
-      reply_to: replyTo || "maciej@servfleet.com",
+      reply_to: replyTo || adresNadawcy,
     }),
   });
 
