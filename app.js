@@ -795,7 +795,7 @@ function renderTable() {
     const tr = document.createElement("tr");
     tr.className = "row-main";
     tr.innerHTML = `
-      <td class="cell-open"><a href="/${lead.numer_leada ? lead.numer_leada.toLowerCase() : "?rekord=" + lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
+      <td class="cell-open"><a href="/${lead.numer_leada || "?rekord=" + lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa cell-clickable" data-toggle="${lead.id}" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>
@@ -984,7 +984,7 @@ function renderKlienciTable() {
     tr.className = "row-main";
     tr.innerHTML = `
       <td class="cell-mono cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.numer_klienta || "—")}</td>
-      <td class="cell-open"><a href="/${(lead.numer_klienta || "").toLowerCase()}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
+      <td class="cell-open"><a href="/${lead.numer_klienta || ""}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
