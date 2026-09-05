@@ -1,10 +1,13 @@
 {
   // Konfiguracja dla Cloudflare Workers (hostowanie statycznej strony
-  // Leady CRM - czysty HTML/CSS/JS, bez żadnego kroku budowania).
+  // Leady CRM - czysty HTML/CSS/JS, bez żadnego kroku budowania -
+  // plus mały backend w worker.js do bezpiecznej wysyłki maili).
   "name": "leady-crm",
   "compatibility_date": "2026-08-31",
+  "main": "worker.js",
   "assets": {
     "directory": "./",
+    "binding": "ASSETS",
     // Appka jest jednostronicowa (cała logika w JS operuje na jednym
     // index.html) - każda nieznaleziona ścieżka ma zwracać index.html,
     // zamiast błędu 404.
