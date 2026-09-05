@@ -2178,6 +2178,34 @@ async function edytujNazweUzytkownika(email) {
 }
 
 // -------------------- START --------------------
+// -------------------- BŁĄD W LINKU Z MAILA (np. wygasly reset hasla) --------------------
+//
+// Supabase, gdy link (reset hasla / zaproszenie) jest juz zuzyty albo
+// wygasl, przekierowuje z powrotem do appki z "#error=..." w adresie -
+// bez tej obslugi appka po cichu pokazywala zwykly ekran logowania,
+// co wygladalo jakby nic sie nie stalo.
+function sprawdzBladWLinkuZMaila() {
+  const hash = window.location.hash;
+  if (!hash.includes("error=")) return;
+
+  const params = new URLSearchParams(hash.substring(1));
+  const kodBledu = params.get("error_code");
+
+  let wiadomosc = "Ten link jest nieprawidłowy lub wygasł. Poproś o nowy.";
+  if (kodBledu === "otp_expired") {
+    wiadomosc =
+      "Ten link do resetu hasła wygasł albo już został użyty (czasem zdarza się to przez automatyczne skanowanie linków przez pocztę firmową, zanim zdążysz kliknąć). Poproś o nowy link.";
+  }
+
+  loginMessage.hidden = false;
+  loginMessage.textContent = wiadomosc;
+  loginMessage.classList.add("login-message-error");
+
+  // Wyczyść "#error=..." z adresu, zeby nie zostawalo przy odswiezeniu.
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
+sprawdzBladWLinkuZMaila();
 checkSession();
 initVersionCheck();
 
