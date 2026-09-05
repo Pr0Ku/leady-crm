@@ -196,15 +196,34 @@ logoutBtn.addEventListener("click", async () => {
 
 let poczatkowyEkranPokazany = false;
 
-function routujDoWlasciwegoEkranu(session) {
+async function routujDoWlasciwegoEkranu(session) {
   if (poczatkowyEkranPokazany) return;
   poczatkowyEkranPokazany = true;
 
-  const rekordId = getRekordIdFromUrl();
   const wyslijMailId = getWyslijMailIdFromUrl();
   if (wyslijMailId) {
     showSendMailScreen(session, wyslijMailId);
-  } else if (rekordId) {
+    return;
+  }
+
+  let rekordId = getRekordIdFromUrl();
+
+  // Krótszy, czytelniejszy link do klienta - np. /c0001 zamiast
+  // ?rekord=<uuid>. Dziala tylko dla klientow (maja numer), leady
+  // nadal uzywaja ?rekord= (nie maja czytelnego identyfikatora).
+  if (!rekordId) {
+    const numerKlienta = getNumerKlientaFromUrl();
+    if (numerKlienta) {
+      const { data } = await supabaseClient
+        .from("leady")
+        .select("id")
+        .eq("numer_klienta", numerKlienta)
+        .single();
+      if (data) rekordId = data.id;
+    }
+  }
+
+  if (rekordId) {
     showDetailScreen(session, rekordId);
   } else {
     showApp(session);
@@ -214,7 +233,7 @@ function routujDoWlasciwegoEkranu(session) {
 async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    routujDoWlasciwegoEkranu(session);
+    await routujDoWlasciwegoEkranu(session);
   } else {
     showLogin();
   }
@@ -222,6 +241,12 @@ async function checkSession() {
 
 function getRekordIdFromUrl() {
   return new URLSearchParams(window.location.search).get("rekord");
+}
+
+function getNumerKlientaFromUrl() {
+  const sciezka = window.location.pathname.replace(/^\/+/, "").trim();
+  if (/^c\d+$/i.test(sciezka)) return sciezka.toUpperCase();
+  return null;
 }
 
 function getWyslijMailIdFromUrl() {
@@ -958,7 +983,7 @@ function renderKlienciTable() {
     tr.className = "row-main";
     tr.innerHTML = `
       <td class="cell-mono cell-clickable" data-toggle="${lead.id}">${escapeHtml(lead.numer_klienta || "—")}</td>
-      <td class="cell-open"><a href="?rekord=${lead.id}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
+      <td class="cell-open"><a href="/${(lead.numer_klienta || "").toLowerCase()}" target="_blank" class="btn-open-link" title="Otwórz w nowym oknie">↗</a></td>
       <td class="cell-nazwa" title="${escapeHtml(lead.nazwa_firmy)}">${escapeHtml(lead.nazwa_firmy)}</td>
       <td>${escapeHtml(lead.lokalizacja || "—")}</td>
       <td>${lead.klientem_od ? new Date(lead.klientem_od).toLocaleDateString("pl-PL") : "—"}</td>
