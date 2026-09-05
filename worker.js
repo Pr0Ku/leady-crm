@@ -74,8 +74,16 @@ async function obslugaWyslijMail(request, env) {
   );
   const profilDane = (await profilResp.json())[0] || {};
 
-  const nazwaNadawcy = profilDane.display_name || "Maciej Janas";
-  const adresNadawcy = profilDane.email_wysylkowy || "maciej@servfleet.com";
+  if (!profilDane.email_wysylkowy || !profilDane.display_name) {
+    return jsonError(
+      "Nie masz jeszcze przypisanego adresu wysyłkowego @servfleet.com ani nazwy wyświetlanej. Poproś admina, żeby ustawił je w Czacie (roster użytkowników → ikona ✎).",
+      403,
+      cors
+    );
+  }
+
+  const nazwaNadawcy = profilDane.display_name;
+  const adresNadawcy = profilDane.email_wysylkowy;
 
   // 2. Odczytaj dane maila z żądania appki.
   let body;
