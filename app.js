@@ -193,18 +193,27 @@ logoutBtn.addEventListener("click", async () => {
   window.location.reload();
 });
 
+let poczatkowyEkranPokazany = false;
+
+function routujDoWlasciwegoEkranu(session) {
+  if (poczatkowyEkranPokazany) return;
+  poczatkowyEkranPokazany = true;
+
+  const rekordId = getRekordIdFromUrl();
+  const wyslijMailId = getWyslijMailIdFromUrl();
+  if (wyslijMailId) {
+    showSendMailScreen(session, wyslijMailId);
+  } else if (rekordId) {
+    showDetailScreen(session, rekordId);
+  } else {
+    showApp(session);
+  }
+}
+
 async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    const rekordId = getRekordIdFromUrl();
-    const wyslijMailId = getWyslijMailIdFromUrl();
-    if (wyslijMailId) {
-      showSendMailScreen(session, wyslijMailId);
-    } else if (rekordId) {
-      showDetailScreen(session, rekordId);
-    } else {
-      showApp(session);
-    }
+    routujDoWlasciwegoEkranu(session);
   } else {
     showLogin();
   }
@@ -260,17 +269,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // resetu widoczny), nie przeskakuj od razu do appki - poczekaj az
     // zapisze nowe haslo.
     if (setPasswordScreen.hidden) {
-      const rekordId = getRekordIdFromUrl();
-      const wyslijMailId = getWyslijMailIdFromUrl();
-      if (wyslijMailId) {
-        showSendMailScreen(session, wyslijMailId);
-      } else if (rekordId) {
-        showDetailScreen(session, rekordId);
-      } else {
-        showApp(session);
-      }
+      routujDoWlasciwegoEkranu(session);
     }
   } else if (event === "SIGNED_OUT") {
+    poczatkowyEkranPokazany = false;
     showLogin();
   }
 });
